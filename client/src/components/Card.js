@@ -16,18 +16,21 @@ const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
   }));
 
   const handleMouseEnter = () => {
+    if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
       onCardAction({ id, value, manaCost, imageUrl }, 'hover');
     }
   };
 
   const handleMouseLeave = () => {
+    if (isDragging) return; // ドラッグ中はポップアップを非表示にしない（ドラッグ終了時に自動で消える）
     if (onCardAction) {
       onCardAction(null, 'leave');
     }
   };
 
   const handleClick = () => {
+    if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
       onCardAction({ id, value, manaCost, imageUrl }, 'click');
     }
@@ -52,7 +55,7 @@ const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
         backgroundColor: imageUrl ? 'transparent' : '#6272a4', // 画像がある場合は透明、ない場合はゾーンの色に
         cursor: 'grab', // ドラッグ可能であることを示すカーソル
         padding: '2px',
-        boxSizing: 'border-box',
+        boxSizing: 'border-sizing',
         fontSize: '0.7vw', // フォントサイズをビューポート幅の0.7%に
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
         backgroundSize: 'cover', // 画像をカード全体にフィットさせる
