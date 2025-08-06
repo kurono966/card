@@ -61,9 +61,9 @@ const App = () => {
       setYourHand(state.yourHand || []); // デフォルト値を設定
       setYourDeckSize(state.deckSize);
       setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
-      setYourManaZone(state.manaZone || []); // デフォルト値を設定
-      setYourMaxMana(state.maxMana);
-      setYourCurrentMana(state.currentMana);
+      setYourManaZone(state.yourManaZone || []); // 元に戻す
+      setYourMaxMana(state.yourMaxMana); // 元に戻す
+      setYourCurrentMana(state.yourCurrentMana); // 元に戻す
 
       setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
       setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
@@ -72,11 +72,6 @@ const App = () => {
       setOpponentCurrentMana(state.opponentCurrentMana);
 
       setIsYourTurn(state.isYourTurn);
-    });
-
-    socket.on('effect_triggered', (message) => {
-      setEffectMessage(message);
-      setTimeout(() => setEffectMessage(null), 3000); // 3秒後にメッセージを消す
     });
 
     return () => {
