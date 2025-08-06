@@ -59,15 +59,11 @@ const App = () => {
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand || []); // デフォルト値を設定
-      setYourDeckSize(state.yourDeckSize);
+      setYourDeckSize(state.deckSize);
       setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
-      setYourManaZone(state.yourManaZone || []); // 修正
-      setYourMaxMana(state.yourMaxMana);
-      setYourCurrentMana(state.yourCurrentMana);
-
-      console.log('[App.js] After state update - yourManaZone:', state.yourManaZone);
-      console.log('[App.js] After state update - yourMaxMana:', state.yourMaxMana);
-      console.log('[App.js] After state update - yourCurrentMana:', state.yourCurrentMana);
+      setYourManaZone(state.manaZone || []); // デフォルト値を設定
+      setYourMaxMana(state.maxMana);
+      setYourCurrentMana(state.currentMana);
 
       setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
       setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
@@ -209,7 +205,7 @@ const App = () => {
                   <p className={styles.emptyZoneText}>No cards played by opponent.</p>
                 ) : (
                   opponentPlayedCards.map(card => (
-                    <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} onCardAction={handleCardAction} />
+                    <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} onCardAction={handleCardAction} />
                   ))
                 )}
               </div>
@@ -224,7 +220,7 @@ const App = () => {
                     <p className={styles.emptyZoneText}>Empty</p>
                   ) : (
                     opponentManaZone.map(card => (
-                      <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} onCardAction={handleCardAction} />
+                      <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} onCardAction={handleCardAction} />
                     ))
                   )}
                 </div>
@@ -245,7 +241,7 @@ const App = () => {
                 <p className={styles.emptyZoneText}>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} onCardAction={handleCardAction} />
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} onCardAction={handleCardAction} />
                 ))
               )}
             </div>
@@ -264,7 +260,7 @@ const App = () => {
                     <p className={styles.emptyZoneText}>Empty</p>
                   ) : (
                     yourManaZone.map(card => (
-                      <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} onCardAction={handleCardAction} />
+                      <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} onCardAction={handleCardAction} />
                     ))
                   )}
                 </div>

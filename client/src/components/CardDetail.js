@@ -64,7 +64,8 @@ const CardDetail = ({ card, onClose }) => {
       <h3 style={{ marginTop: '15px' }}>{card.name}</h3> {/* カード名称を表示 */}
       <p>Value: {card.value}</p>
       <p>Mana Cost: {card.manaCost}</p>
-      {card.effect && <p>Effect: {card.effect}</p>} {/* 効果があれば表示 */}
+      {card.effect && <p style={{ fontWeight: 'bold', color: '#50fa7b' }}>Effect: {card.effect}</p>} {/* 効果があれば太字で表示 */}
+      {card.description && <p style={{ fontSize: '0.9em', color: '#bd93f9' }}>{card.description}</p>} {/* 説明があれば薄めの色で表示 */}
     </div>
   );
 };
