@@ -74,7 +74,7 @@
   display: flex;
   flex-direction: row; /* マナゾーンと手札を横に並べる */
   flex-grow: 1; /* 残りのスペースを埋める */
-  justify-content: space-around;
+  justify-content: flex-start; /* 左寄せ */
   align-items: flex-start;
   margin-top: 0.5rem;
 }
@@ -82,14 +82,15 @@
 .manaZoneContainer {
   display: flex;
   flex-direction: column;
-  width: 25%; /* マナゾーンの幅 */
+  width: 20%; /* マナゾーンの幅を調整 */
   min-width: 80px; /* 最小幅 */
   align-items: center;
+  margin-right: 0.5rem; /* 手札との間にスペース */
 }
 
 .handContainer {
   flex-grow: 1; /* 手札が残りのスペースを埋める */
-  width: 70%; /* 手札の幅 */
+  width: 75%; /* 手札の幅 */
 }
 
 .deckEndTurnContainer {
@@ -152,4 +153,28 @@
 
 .endTurnButton:hover {
   background-color: #ff79c6; /* ホバーでピンク系 */
+}
+
+/* 相手のマナゾーンの調整 */
+.opponentFieldManaContainer {
+  display: flex;
+  flex-direction: row; /* フィールドとマナゾーンを横に並べる */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  justify-content: space-between; /* スペースを均等に配分 */
+  align-items: flex-start;
+}
+
+.opponentManaZoneContainer {
+  display: flex;
+  flex-direction: column;
+  width: 20%; /* マナゾーンの幅を調整 */
+  min-width: 80px; /* 最小幅 */
+  align-items: center;
+  margin-left: 0.5rem; /* フィールドとの間にスペース */
+}
+
+/* 相手のPlayedCardsAreaの幅を調整 */
+.opponentArea .playedCardsArea {
+  width: 75%; /* フィールドの幅 */
+  flex-grow: 1; /* 残りのスペースを埋める */
 }
