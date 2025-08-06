@@ -70,12 +70,14 @@ function emitFullGameState() {
       yourManaZone: selfPlayer.manaZone,
       yourMaxMana: selfPlayer.maxMana,
       yourCurrentMana: selfPlayer.currentMana,
+      yourLife: selfPlayer.life, // 自分のライフを送信
       isYourTurn: selfPlayer.isTurn,
       opponentPlayedCards: opponentPlayer ? opponentPlayer.played : [],
       opponentManaZone: opponentPlayer ? opponentPlayer.manaZone : [],
       opponentDeckSize: opponentPlayer ? opponentPlayer.deck.length : 0,
       opponentMaxMana: opponentPlayer ? opponentPlayer.maxMana : 0,
       opponentCurrentMana: opponentPlayer ? opponentPlayer.currentMana : 0,
+      opponentLife: opponentPlayer ? opponentPlayer.life : 0, // 相手のライフを送信
     };
     io.to(pId).emit('game_state', stateForSelf);
     console.log(`[Server] State sent to ${pId}: isYourTurn = ${selfPlayer.isTurn}, Current Mana = ${selfPlayer.currentMana}/${selfPlayer.maxMana}`);
