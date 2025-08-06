@@ -131,9 +131,10 @@ const App = () => {
         flexDirection: 'column',
         height: '100vh', // 画面の高さに合わせる
         overflow: 'hidden', // スクロールを禁止
+        fontSize: '0.9rem', // 全体のフォントサイズを少し小さく
       }}>
-        <h1 style={{ margin: '10px 0' }}>{message}</h1>
-        <h2 style={{ margin: '5px 0' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h1 style={{ margin: '0.5rem 0' }}>{message}</h1>
+        <h2 style={{ margin: '0.2rem 0' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
         <div style={{ 
           display: 'flex',
@@ -143,14 +144,14 @@ const App = () => {
           width: '98vw', // 画面幅の98%を使用
           margin: '0 auto',
           border: '2px solid #ccc',
-          padding: '10px',
+          padding: '0.5rem',
           borderRadius: '10px',
           boxSizing: 'border-box',
         }}>
           {/* 相手のエリア */}
           <div style={{ 
             border: '1px solid red',
-            padding: '10px',
+            padding: '0.5rem',
             display: 'flex',
             flexDirection: 'column',
             width: '48%',
@@ -165,13 +166,13 @@ const App = () => {
             <div
               ref={dropMana} // ドロップターゲットとして設定
               style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '60px', border: isOverMana ? '2px dashed blue' : '1px dashed #f00', padding: '5px', marginBottom: '10px',
+                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #f00', padding: '0.2rem', marginBottom: '0.5rem',
                 backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
                 flexShrink: 0, // 縮小しない
               }}
             >
               {opponentManaZone.length === 0 ? (
-                <p>Empty</p>
+                <p style={{ fontSize: '0.8rem' }}>Empty</p>
               ) : (
                 opponentManaZone.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} />
@@ -182,14 +183,14 @@ const App = () => {
             <div
               ref={dropField} // ドロップターゲットとして設定
               style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '130px', border: isOverField ? '2px dashed blue' : '1px dashed #f00', padding: '5px',
+                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #f00', padding: '0.2rem',
                 backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
                 flexGrow: 1, // 残りのスペースを埋める
                 overflowY: 'auto', // 必要に応じてスクロール
               }}
             >
               {opponentPlayedCards.length === 0 ? (
-                <p>No cards played by opponent.</p>
+                <p style={{ fontSize: '0.8rem' }}>No cards played by opponent.</p>
               ) : (
                 opponentPlayedCards.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} />
@@ -201,7 +202,7 @@ const App = () => {
           {/* 自分のエリア */}
           <div style={{ 
             border: '1px solid green',
-            padding: '10px',
+            padding: '0.5rem',
             display: 'flex',
             flexDirection: 'column',
             width: '48%',
@@ -217,13 +218,13 @@ const App = () => {
             <div
               ref={dropMana} // ドロップターゲットとして設定
               style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '60px', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '5px', marginBottom: '10px',
-                backgroundColor: isOverMana ? '#e0ffe0' : 'transparent',
+                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem', marginBottom: '0.5rem',
+                backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
                 flexShrink: 0, // 縮小しない
               }}
             >
               {yourManaZone.length === 0 ? (
-                <p>Empty</p>
+                <p style={{ fontSize: '0.8rem' }}>Empty</p>
               ) : (
                 yourManaZone.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} />
@@ -236,21 +237,21 @@ const App = () => {
             <div
               ref={dropField} // ドロップターゲットとして設定
               style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '130px', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '5px',
-                backgroundColor: isOverField ? '#e0ffe0' : 'transparent',
+                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem',
+                backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
                 flexGrow: 1, // 残りのスペースを埋める
                 overflowY: 'auto', // 必要に応じてスクロール
               }}
             >
               {yourPlayedCards.length === 0 ? (
-                <p>No cards played by you.</p>
+                <p style={{ fontSize: '0.8rem' }}>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} />
                 ))
               )}
             </div>
-            <button onClick={handleEndTurn} style={{ padding: '10px 20px', marginTop: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+            <button onClick={handleEndTurn} style={{ padding: '0.5rem 1rem', marginTop: '0.5rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem' }}>
               End Turn
             </button>
           </div>
