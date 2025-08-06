@@ -133,8 +133,8 @@ const App = () => {
         overflow: 'hidden', // スクロールを禁止
         fontSize: '0.9rem', // 全体のフォントサイズを少し小さく
       }}>
-        <h1 style={{ margin: '0.5rem 0' }}>{message}</h1>
-        <h2 style={{ margin: '0.2rem 0' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h1 style={{ margin: '0.2rem 0', fontSize: '1.2rem' }}>{message}</h1>
+        <h2 style={{ margin: '0.1rem 0', fontSize: '1rem' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
         <div style={{ 
           display: 'flex',
@@ -219,7 +219,7 @@ const App = () => {
               ref={dropMana} // ドロップターゲットとして設定
               style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem', marginBottom: '0.5rem',
-                backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
+                backgroundColor: isOverMana ? '#e0ffe0' : 'transparent',
                 flexShrink: 0, // 縮小しない
               }}
             >
@@ -238,13 +238,13 @@ const App = () => {
               ref={dropField} // ドロップターゲットとして設定
               style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem',
-                backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
+                backgroundColor: isOverField ? '#e0ffe0' : 'transparent',
                 flexGrow: 1, // 残りのスペースを埋める
                 overflowY: 'auto', // 必要に応じてスクロール
               }}
             >
               {yourPlayedCards.length === 0 ? (
-                <p style={{ fontSize: '0.8rem' }}>No cards played by you.</p>
+                <p>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} />
