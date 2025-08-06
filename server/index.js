@@ -14,22 +14,44 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3000;
 
 // 使用する画像ファイルのリスト
-const allCards = require('./cardData');
+const CARD_IMAGE_URLS = [
+  '/IMG_1.jpg',
+  '/IMG_2.jpg',
+  '/IMG_3.jpg',
+  '/IMG_4.jpg',
+  '/IMG_5.jpg',
+];
 
 // --- ゲームの状態管理 --- //
-let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false } }
+let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false, life: 20 } }
 let playerOrder = []; // プレイヤーの順番を保持する配列
 let currentPlayerIndex = 0; // 現在のターンのプレイヤーのインデックス
 let gameActive = false; // ゲームがアクティブかどうかを示すフラグ
 
 function initializePlayerState(socketId) {
+  // 仮のデッキを作成 (1から10のカードを2枚ずつ)
   let deck = [];
-  // allCardsからカードを2枚ずつデッキに追加
-  for (let i = 0; i < 10; i++) { // 最初の10種類のカードを使用
-    const card = allCards[i];
-    // 各カードにユニークなIDを付与してデッキに追加
-    deck.push({ ...card, id: `${card.id}_${socketId}_a` });
-    deck.push({ ...card, id: `${card.id}_${socketId}_b` });
+  for (let i = 1; i <= 10; i++) {
+    const randomImageUrl = CARD_IMAGE_URLS[Math.floor(Math.random() * CARD_IMAGE_URLS.length)];
+    const cardName = `Card ${i}`; // カード名称
+    let cardEffect = null;
+    let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
+
+    // 攻撃力と耐久力をランダムな一桁の数字で設定
+    const attack = Math.floor(Math.random() * 9) + 1; // 1から9
+    const defense = Math.floor(Math.random() * 9) + 1; // 1から9
+
+    if (i === 5) { // 例: 5のカードに効果を付与
+      cardEffect = "Draw 1 card";
+      cardDescription = "When played, draw 1 card from your deck.";
+    } else if (i === 1) {
+      cardDescription = "A very weak card, but it costs little mana.";
+    } else if (i === 10) {
+      cardDescription = "A powerful card, but requires a lot of mana.";
+    }
+
+    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
+    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
@@ -44,7 +66,7 @@ function initializePlayerState(socketId) {
     isTurn: false,
     manaPlayedThisTurn: false, // このターンにマナを置いたか
     drawnThisTurn: false, // このターンにドローしたか
-    life: 20, // プレイヤーのライフを20に設定
+    life: 20, // ライフポイントを追加
   };
   console.log(`[Server] Player ${socketId} initialized with deck size: ${deck.length}`);
 }
@@ -71,17 +93,17 @@ function emitFullGameState() {
       yourManaZone: selfPlayer.manaZone,
       yourMaxMana: selfPlayer.maxMana,
       yourCurrentMana: selfPlayer.currentMana,
-      yourLife: selfPlayer.life, // 自分のライフを送信
       isYourTurn: selfPlayer.isTurn,
+      yourLife: selfPlayer.life, // 自分のライフを追加
       opponentPlayedCards: opponentPlayer ? opponentPlayer.played : [],
       opponentManaZone: opponentPlayer ? opponentPlayer.manaZone : [],
       opponentDeckSize: opponentPlayer ? opponentPlayer.deck.length : 0,
       opponentMaxMana: opponentPlayer ? opponentPlayer.maxMana : 0,
       opponentCurrentMana: opponentPlayer ? opponentPlayer.currentMana : 0,
-      opponentLife: opponentPlayer ? opponentPlayer.life : 0, // 相手のライフを送信
+      opponentLife: opponentPlayer ? opponentPlayer.life : 0, // 相手のライフを追加
     };
     io.to(pId).emit('game_state', stateForSelf);
-    console.log(`[Server] State sent to ${pId}: isYourTurn = ${selfPlayer.isTurn}, Current Mana = ${selfPlayer.currentMana}/${selfPlayer.maxMana}`);
+    console.log(`[Server] State sent to ${pId}: isYourTurn = ${selfPlayer.isTurn}, Current Mana = ${selfPlayer.currentMana}/${selfPlayer.maxMana}, Life = ${selfPlayer.life}`);
   });
   console.log('-------------------------------');
 }

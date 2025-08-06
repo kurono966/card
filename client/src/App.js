@@ -242,9 +242,24 @@ const App = () => {
               {yourPlayedCards.length === 0 ? (
                 <p className={styles.emptyZoneText}>No cards played by you.</p>
               ) : (
-                yourPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} attack={card.attack} defense={card.defense} onCardAction={handleCardAction} />
-                ))
+                {yourPlayedCards.map(card => (
+                <Card
+                  key={card.id}
+                  id={card.id}
+                  value={card.value}
+                  manaCost={card.manaCost}
+                  imageUrl={card.imageUrl}
+                  name={card.name}
+                  effect={card.effect}
+                  description={card.description}
+                  attack={card.attack}
+                  defense={card.defense}
+                  onCardAction={handleCardAction}
+                  isPlayed={true} // フィールド上のカードなのでtrue
+                  isYourTurn={isYourTurn} // 自分のターンかどうかを渡す
+                  hasAttackedThisTurn={card.hasAttackedThisTurn} // 攻撃済みフラグを渡す
+                />
+              ))}
               )}
             </div>
 

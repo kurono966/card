@@ -5,8 +5,8 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction }) => { // effect, description, attack, defense を追加
-  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}`); // デバッグログを追加
+const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction, isPlayed, isYourTurn, hasAttackedThisTurn }) => { // effect, description, attack, defense, isPlayed, isYourTurn, hasAttackedThisTurn を追加
+  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}, isPlayed: ${isPlayed}, isYourTurn: ${isYourTurn}, hasAttackedThisTurn: ${hasAttackedThisTurn}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense }, // effect, description, attack, defense もドラッグアイテムに含める
@@ -33,6 +33,13 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
     if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
       onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'click'); // effect, description, attack, defense を渡す
+    }
+  };
+
+  const handleAttack = (e) => {
+    e.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    if (onCardAction) {
+      onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'attack');
     }
   };
 
@@ -74,6 +81,23 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
         <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>⚔️{attack}</span>
         <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>🛡️{defense}</span>
       </div>
+      {isPlayed && isYourTurn && !hasAttackedThisTurn && (
+        <button
+          onClick={handleAttack}
+          style={{
+            marginTop: '5px',
+            padding: '2px 5px',
+            fontSize: '0.6em',
+            cursor: 'pointer',
+            backgroundColor: '#ff5555',
+            color: 'white',
+            border: 'none',
+            borderRadius: '3px',
+          }}
+        >
+          攻撃
+        </button>
+      )}
     </div>
   );
 };
