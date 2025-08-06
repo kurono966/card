@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const allCards = require('./cardData'); // cardData.jsをインポート
 
 const app = express();
 const cors = require('cors');
@@ -15,15 +16,6 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// 使用する画像ファイルのリスト
-const CARD_IMAGE_URLS = [
-  '/IMG_1.jpg',
-  '/IMG_2.jpg',
-  '/IMG_3.jpg',
-  '/IMG_4.jpg',
-  '/IMG_5.jpg',
-];
-
 // --- ゲームの状態管理 --- //
 let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false, life: 20 } }
 let playerOrder = []; // プレイヤーの順番を保持する配列
@@ -31,30 +23,17 @@ let currentPlayerIndex = 0; // 現在のターンのプレイヤーのインデ�
 let gameActive = false; // ゲームがアクティブかどうかを示すフラグ
 
 function initializePlayerState(socketId) {
-  // 仮のデッキを作成 (1から10のカードを2枚ずつ)
+  // cardData.jsからデッキを構築
   let deck = [];
-  for (let i = 1; i <= 10; i++) {
-    const randomImageUrl = CARD_IMAGE_URLS[Math.floor(Math.random() * CARD_IMAGE_URLS.length)];
-    const cardName = `Card ${i}`; // カード名称
-    let cardEffect = null;
-    let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
+  const deckSize = 40; // デッキの枚数
 
-    // 攻撃力と耐久力をランダムな一桁の数字で設定
-    const attack = Math.floor(Math.random() * 9) + 1; // 1から9
-    const defense = Math.floor(Math.random() * 9) + 1; // 1から9
-
-    if (i === 5) { // 例: 5のカードに効果を付与
-      cardEffect = "Draw 1 card";
-      cardDescription = "When played, draw 1 card from your deck.";
-    } else if (i === 1) {
-      cardDescription = "A very weak card, but it costs little mana.";
-    } else if (i === 10) {
-      cardDescription = "A powerful card, but requires a lot of mana.";
-    }
-
-    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
-    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
+  for (let i = 0; i < deckSize; i++) {
+    // allCardsからランダムにカードを選択し、新しいIDを付与してデッキに追加
+    const randomIndex = Math.floor(Math.random() * allCards.length);
+    const card = { ...allCards[randomIndex], id: `${allCards[randomIndex].id}_${socketId}_${i}` };
+    deck.push(card);
   }
+
   // デッキをシャッフル
   deck = shuffleArray(deck);
 
@@ -311,15 +290,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// const path = require('path');
 
-// // Serve static files from the React app
-// app.use(express.static(path.join(__dirname, '../client/build')));
-
-// // All remaining requests return the React app, so it can handle routing.
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-// });
 
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
