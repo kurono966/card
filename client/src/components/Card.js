@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Card = ({ value, onClick }) => {
+const Card = ({ value, manaCost, onClick }) => {
   return (
     <div
       style={{
@@ -9,15 +9,20 @@ const Card = ({ value, onClick }) => {
         border: '1px solid black',
         borderRadius: '5px',
         display: 'flex',
-        justifyContent: 'center',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         alignItems: 'center',
         margin: '5px',
         backgroundColor: '#f0f0f0',
         cursor: onClick ? 'pointer' : 'default',
+        padding: '5px',
+        boxSizing: 'border-box',
       }}
       onClick={onClick}
     >
-      {value}
+      <div style={{ fontSize: '0.8em', alignSelf: 'flex-start' }}>Cost: {manaCost}</div>
+      <div style={{ fontSize: '1.5em', fontWeight: 'bold' }}>{value}</div>
+      <div style={{ fontSize: '0.8em', alignSelf: 'flex-end' }}></div> {/* Placeholder for future info */}
     </div>
   );
 };
