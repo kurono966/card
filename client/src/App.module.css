@@ -27,7 +27,7 @@
   display: flex;
   flex-direction: column; /* 子要素を縦に並べる */
   justify-content: space-between; /* 上下のエリア間にスペースを確保 */
-  align-items: center; /* 中央揃え */
+  align-items: stretch; /* 子要素が親の幅いっぱいに広がるように */
   flex-grow: 1; /* 残りのスペースを埋める */
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
@@ -45,7 +45,7 @@
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  width: 98%; /* 幅を98%に */
+  width: 100%; /* 幅を100%に */
   height: 48%; /* 高さを48%に */
   border-radius: 8px;
   box-sizing: border-box;
