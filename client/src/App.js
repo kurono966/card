@@ -58,15 +58,16 @@ const App = () => {
 
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
-      setYourHand(state.yourHand || []); // デフォルト値を設定
+      setYourHand(state.yourHand);
       setYourDeckSize(state.deckSize);
-      setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
-      setYourManaZone(state.manaZone || []); // デフォルト値を設定
-      setYourMaxMana(state.maxMana);
-      setYourCurrentMana(state.currentMana);
+      setYourPlayedCards(state.yourPlayedCards);
+      setYourManaZone(state.manaZone); 
+      setYourMaxMana(state.maxMana); 
+      setYourCurrentMana(state.currentMana); 
+      console.log('[App.js] Your Mana Zone after update:', state.manaZone); // デバッグログ
 
-      setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
-      setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
+      setOpponentPlayedCards(state.opponentPlayedCards);
+      setOpponentManaZone(state.opponentManaZone);
       setOpponentDeckSize(state.opponentDeckSize);
       setOpponentMaxMana(state.opponentMaxMana);
       setOpponentCurrentMana(state.opponentCurrentMana);
@@ -106,53 +107,61 @@ const App = () => {
     }
   };
 
-  // カード詳細表示のハンドラ
-  const handleCardAction = (card, actionType) => {
-    if (actionType === 'hover') {
-      // デスクトップでのマウスオーバー時
-      if (window.innerWidth > 768) { // 例: 画面幅が768pxより大きい場合のみホバーで表示
-        setSelectedCardDetail(card);
-      }
-    } else if (actionType === 'leave') {
-      // デスクトップでのマウスが離れた時
-      if (window.innerWidth > 768) {
-        setSelectedCardDetail(null);
-      }
-    } else if (actionType === 'click') {
-      // モバイルでのタップ時、またはデスクトップでのクリック時
-      setSelectedCardDetail(card);
-    }
-  };
-
-  // マナゾーンへのドロップターゲット
-  const [{ isOverMana }, dropMana] = useDrop(() => ({
+  // 自分のマナゾーンへのドロップターゲット
+  const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
-      console.log('Card dropped on Mana Zone:', item.id);
-      if (!isYourTurnRef.current) { // useRef の値を使用
+      console.log('Card dropped on Your Mana Zone:', item.id);
+      if (!isYourTurnRef.current) {
         alert("It's not your turn!");
         return;
       }
       socket.emit('play_card', item.id, 'mana');
     },
     collect: (monitor) => ({
-      isOverMana: !!monitor.isOver(),
+      isOverYourMana: !!monitor.isOver(),
     }),
   }));
 
-  // フィールドへのドロップターゲット
-  const [{ isOverField }, dropField] = useDrop(() => ({
+  // 自分のフィールドへのドロップターゲット
+  const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
-      console.log('Card dropped on Field:', item.id);
-      if (!isYourTurnRef.current) { // useRef の値を使用
+      console.log('Card dropped on Your Field:', item.id);
+      if (!isYourTurnRef.current) {
         alert("It's not your turn!");
         return;
       }
       socket.emit('play_card', item.id, 'field');
     },
     collect: (monitor) => ({
-      isOverField: !!monitor.isOver(),
+      isOverYourField: !!monitor.isOver(),
+    }),
+  }));
+
+  // 相手のマナゾーンへのドロップターゲット
+  const [{ isOverOpponentMana }, dropOpponentMana] = useDrop(() => ({
+    accept: ItemTypes.CARD,
+    drop: (item, monitor) => {
+      console.log('Card dropped on Opponent Mana Zone:', item.id);
+      // 相手のゾーンにはドロップできないようにする
+      alert("You cannot play cards to opponent's mana zone!");
+    },
+    collect: (monitor) => ({
+      isOverOpponentMana: !!monitor.isOver(),
+    }),
+  }));
+
+  // 相手のフィールドへのドロップターゲット
+  const [{ isOverOpponentField }, dropOpponentField] = useDrop(() => ({
+    accept: ItemTypes.CARD,
+    drop: (item, monitor) => {
+      console.log('Card dropped on Opponent Field:', item.id);
+      // 相手のゾーンにはドロップできないようにする
+      alert("You cannot play cards to opponent's field!");
+    },
+    collect: (monitor) => ({
+      isOverOpponentField: !!monitor.isOver(),
     }),
   }));
 
@@ -172,8 +181,8 @@ const App = () => {
             <div className={styles.opponentFieldManaContainer}> {/* 新しいコンテナ */}
               <h4>Opponent\'s Played Cards:</h4>
               <div
-                ref={dropField} // ドロップターゲットとして設定
-                className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
+                ref={dropOpponentField} // ドロップターゲットとして設定
+                className={`${styles.playedCardsArea} ${isOverOpponentField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
               >
                 {opponentPlayedCards.length === 0 ? (
                   <p className={styles.emptyZoneText}>No cards played by opponent.</p>
@@ -187,8 +196,8 @@ const App = () => {
               <div className={styles.opponentManaZoneContainer}> {/* 相手のマナゾーンコンテナ */}
                 <h4>Opponent\'s Mana Zone:</h4>
                 <div
-                  ref={dropMana} // ドロップターゲットとして設定
-                  className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
+                  ref={dropOpponentMana} // ドロップターゲットとして設定
+                  className={`${styles.manaZone} ${isOverOpponentMana ? styles.manaZoneOver : ''}`} // クラス名を使用
                 >
                   {opponentManaZone.length === 0 ? (
                     <p className={styles.emptyZoneText}>Empty</p>
@@ -208,8 +217,8 @@ const App = () => {
             {/* 自分のフィールドを上部に設置 */}
             <h4>Your Played Cards:</h4>
             <div
-              ref={dropField} // ドロップターゲットとして設定
-              className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
+              ref={dropYourField} // ドロップターゲットとして設定
+              className={`${styles.playedCardsArea} ${isOverYourField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
             >
               {yourPlayedCards.length === 0 ? (
                 <p className={styles.emptyZoneText}>No cards played by you.</p>
@@ -227,8 +236,8 @@ const App = () => {
                 <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
                 <h4>Your Mana Zone:</h4>
                 <div
-                  ref={dropMana} // ドロップターゲットとして設定
-                  className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
+                  ref={dropYourMana} // ドロップターゲットとして設定
+                  className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`} // クラス名を使用
                 >
                   {yourManaZone.length === 0 ? (
                     <p className={styles.emptyZoneText}>Empty</p>
