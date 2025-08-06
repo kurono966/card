@@ -5,7 +5,7 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
+const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
   console.log(`[Card.js] Card ID: ${id}, Image URL: ${imageUrl}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
@@ -14,6 +14,24 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
       isDragging: !!monitor.isDragging(),
     }),
   }));
+
+  const handleMouseEnter = () => {
+    if (onCardAction) {
+      onCardAction({ id, value, manaCost, imageUrl }, 'hover');
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (onCardAction) {
+      onCardAction(null, 'leave');
+    }
+  };
+
+  const handleClick = () => {
+    if (onCardAction) {
+      onCardAction({ id, value, manaCost, imageUrl }, 'click');
+    }
+  };
 
   return (
     <div
@@ -32,8 +50,8 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
         alignItems: 'center',
         margin: '0.2vw', // マージンをビューポート幅の0.2%に
         backgroundColor: imageUrl ? 'transparent' : '#6272a4', // 画像がある場合は透明、ない場合はゾーンの色に
-        cursor: onClick ? 'pointer' : 'grab', // ドラッグ可能であることを示すカーソル
-        padding: '0.2vw',
+        cursor: 'grab', // ドラッグ可能であることを示すカーソル
+        padding: '2px',
         boxSizing: 'border-box',
         fontSize: '0.7vw', // フォントサイズをビューポート幅の0.7%に
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
@@ -43,7 +61,9 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
         textShadow: '1px 1px 2px rgba(0,0,0,0.9)', // 読みやすくするために影を濃く
         boxShadow: '3px 3px 8px rgba(0,0,0,0.6)', // カードに影を追加
       }}
-      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       <div style={{ fontSize: '0.8em', alignSelf: 'flex-start' }}>Cost: {manaCost}</div>
       <div style={{ fontSize: '1.5em', fontWeight: 'bold' }}>{value}</div>

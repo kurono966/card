@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from './Card';
 
-const Hand = ({ cards }) => {
+const Hand = ({ cards, onCardAction }) => {
   return (
     <div
       style={{
@@ -21,7 +21,7 @@ const Hand = ({ cards }) => {
         <p>Your hand is empty.</p>
       ) : (
         cards.map((card) => (
-          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
+          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} onCardAction={onCardAction} />
         ))
       )}
     </div>
