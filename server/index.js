@@ -161,9 +161,9 @@ io.on('connection', (socket) => {
       }
       players[socket.id].manaZone.push(card);
       players[socket.id].maxMana++; // マナゾーンに置くと最大マナが増える
-      players[socket.id].currentMana = players[socket.id].maxMana; // マナ回復
+      players[socket.id].currentMana++; // 現在マナも1増やす
       players[socket.id].manaPlayedThisTurn = true; // このターンはマナを置いた
-      console.log(`[Server] Player ${socket.id} played card ${card.value} to mana zone. Max Mana: ${players[socket.id].maxMana}`);
+      console.log(`[Server] Player ${socket.id} played card ${card.value} to mana zone. Max Mana: ${players[socket.id].maxMana}, Current Mana: ${players[socket.id].currentMana}`);
     } else if (playType === 'field') {
       if (players[socket.id].currentMana >= card.manaCost) {
         players[socket.id].currentMana -= card.manaCost;
