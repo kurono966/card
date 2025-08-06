@@ -74,8 +74,7 @@ const App = () => {
 
   const handlePlayCard = (cardId) => {
     // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
-    // 必要であれば、カードクリックで何かアクションを起こすために残しておく
-    console.log('Card clicked:', cardId);
+    console.log('Card clicked (should not happen with D&D):', cardId);
   };
 
   const handleEndTurn = () => {
@@ -90,11 +89,12 @@ const App = () => {
   const [{ isOverMana }, dropMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
-      if (isYourTurn) {
-        socket.emit('play_card', item.id, 'mana');
-      } else {
+      console.log('Card dropped on Mana Zone:', item.id);
+      if (!isYourTurn) {
         alert("It's not your turn!");
+        return;
       }
+      socket.emit('play_card', item.id, 'mana');
     },
     collect: (monitor) => ({
       isOverMana: !!monitor.isOver(),
@@ -105,11 +105,12 @@ const App = () => {
   const [{ isOverField }, dropField] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
-      if (isYourTurn) {
-        socket.emit('play_card', item.id, 'field');
-      } else {
+      console.log('Card dropped on Field:', item.id);
+      if (!isYourTurn) {
         alert("It's not your turn!");
+        return;
       }
+      socket.emit('play_card', item.id, 'field');
     },
     collect: (monitor) => ({
       isOverField: !!monitor.isOver(),
@@ -144,7 +145,7 @@ const App = () => {
                 ))
               )}
             </div>
-            <h4>Opponent\'s Played Cards:</h4>
+            <h4>Opponent's Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
               style={{
