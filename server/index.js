@@ -14,7 +14,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3000;
 
 // --- ゲームの状態管理 --- //
-let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false } }
+let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false } }
 let playerOrder = []; // プレイヤーの順番を保持する配列
 let currentPlayerIndex = 0; // 現在のターンのプレイヤーのインデックス
 let gameActive = false; // ゲームがアクティブかどうかを示すフラグ
@@ -38,6 +38,7 @@ function initializePlayerState(socketId) {
     currentMana: 0, // 現在のマナ
     isTurn: false,
     manaPlayedThisTurn: false, // このターンにマナを置いたか
+    drawnThisTurn: false, // このターンにドローしたか
   };
   console.log(`[Server] Player ${socketId} initialized with deck size: ${deck.length}`);
 }
@@ -127,10 +128,15 @@ io.on('connection', (socket) => {
       console.log(`[Server] Player ${socket.id} tried to draw, but it's not their turn or game not active.`);
       return;
     }
+    if (players[socket.id].drawnThisTurn) {
+      console.log(`[Server] Player ${socket.id} tried to draw, but already drew this turn.`);
+      return;
+    }
 
     if (players[socket.id].deck.length > 0) {
       const card = players[socket.id].deck.shift();
       players[socket.id].hand.push(card);
+      players[socket.id].drawnThisTurn = true; // このターンはドローした
       console.log(`[Server] Player ${socket.id} drew card: ${card.value}. Deck size: ${players[socket.id].deck.length}`);
       emitFullGameState();
     } else {
@@ -196,6 +202,18 @@ io.on('connection', (socket) => {
         players[nextPlayerId].isTurn = true; // 次のプレイヤーのターンを開始
         players[nextPlayerId].currentMana = players[nextPlayerId].maxMana; // 次のプレイヤーのマナを回復
         players[nextPlayerId].manaPlayedThisTurn = false; // 次のターンのマナプレイフラグをリセット
+        players[nextPlayerId].drawnThisTurn = false; // 次のターンのドローフラグをリセット
+
+        // ターン開始時の自動ドロー
+        if (players[nextPlayerId].deck.length > 0) {
+          const card = players[nextPlayerId].deck.shift();
+          players[nextPlayerId].hand.push(card);
+          players[nextPlayerId].drawnThisTurn = true; // 自動ドローも1回とカウント
+          console.log(`[Server] Player ${nextPlayerId} automatically drew card: ${card.value}. Deck size: ${players[nextPlayerId].deck.length}`);
+        } else {
+          console.log(`[Server] Player ${nextPlayerId} could not draw, deck is empty.`);
+        }
+
         console.log(`[Server] Turn ended for ${socket.id}. Next turn for ${nextPlayerId}`);
     } else {
         console.log(`[Server] Error: Next player ${nextPlayerId} not found after turn end. Resetting game.`);
@@ -236,6 +254,7 @@ io.on('connection', (socket) => {
         players[playerOrder[0]].isTurn = true; // 残ったプレイヤーにターンを渡す
         players[playerOrder[0]].currentMana = players[playerOrder[0]].maxMana; // マナを回復
         players[playerOrder[0]].manaPlayedThisTurn = false; // マナプレイフラグをリセット
+        players[playerOrder[0]].drawnThisTurn = false; // ドローフラグをリセット
         console.log(`[Server] Turn passed to remaining player: ${playerOrder[0]}`);
     }
     emitFullGameState(); // 残ったプレイヤーに状態を更新
