@@ -18,8 +18,8 @@ const Hand = ({ cards, onPlayCard }) => {
       {cards.length === 0 ? (
         <p>Your hand is empty.</p>
       ) : (
-        cards.map((card, index) => (
-          <Card key={index} value={card.value} onClick={() => onPlayCard(card.id)} />
+        cards.map((card) => (
+          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} onClick={() => onPlayCard(card.id)} />
         ))
       )}
     </div>

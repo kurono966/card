@@ -1,9 +1,24 @@
 import React from 'react';
+import { useDrag } from 'react-dnd';
 
-const Card = ({ value, manaCost, onClick }) => {
+const ItemTypes = {
+  CARD: 'card',
+};
+
+const Card = ({ id, value, manaCost, onClick }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.CARD,
+    item: { id, value, manaCost },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
+
   return (
     <div
+      ref={drag}
       style={{
+        opacity: isDragging ? 0.5 : 1,
         width: '80px',
         height: '120px',
         border: '1px solid black',
