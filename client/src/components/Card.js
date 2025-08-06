@@ -6,7 +6,7 @@ const ItemTypes = {
 };
 
 const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction }) => { // effect, description, attack, defense を追加
-  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Image URL: ${imageUrl}`); // デバッグログを追加
+  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense }, // effect, description, attack, defense もドラッグアイテムに含める
