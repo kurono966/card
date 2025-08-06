@@ -5,8 +5,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #282c34; /* 全体の背景色 */
-  color: white; /* 全体の文字色 */
+  background-color: #1a1a2e; /* 全体の背景色を濃い青紫系に */
+  color: #e0e0e0; /* 全体の文字色を明るいグレーに */
 }
 
 code {

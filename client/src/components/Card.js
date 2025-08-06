@@ -22,23 +22,24 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
         opacity: isDragging ? 0.5 : 1,
         width: '60px', // カードの幅をさらに調整
         height: '90px', // カードの高さをさらに調整
-        border: '1px solid black',
+        border: '1px solid #f8f8f2', // ボーダー色を白系に
         borderRadius: '5px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'center',
         margin: '2px', // マージンをさらに調整
-        backgroundColor: '#f0f0f0',
-        cursor: onClick ? 'pointer' : 'default',
+        backgroundColor: imageUrl ? 'transparent' : '#6272a4', // 画像がある場合は透明、ない場合はゾーンの色に
+        cursor: onClick ? 'pointer' : 'grab', // ドラッグ可能であることを示すカーソル
         padding: '2px',
         boxSizing: 'border-box',
         fontSize: '0.7rem', // フォントサイズをさらに調整
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
         backgroundSize: 'cover', // 画像をカード全体にフィットさせる
         backgroundPosition: 'center', // 画像を中央に配置
-        color: imageUrl ? 'white' : 'black', // 画像がある場合は文字色を白に
-        textShadow: imageUrl ? '1px 1px 2px black' : 'none', // 読みやすくするために影を追加
+        color: imageUrl ? '#f8f8f2' : '#f8f8f2', // 画像がある場合も文字色を白系に
+        textShadow: imageUrl ? '1px 1px 2px rgba(0,0,0,0.7)' : 'none', // 読みやすくするために影を濃く
+        boxShadow: '2px 2px 5px rgba(0,0,0,0.5)', // カードに影を追加
       }}
       onClick={onClick}
     >

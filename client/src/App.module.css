@@ -5,18 +5,20 @@
   overflow: hidden; /* スクロールを禁止 */
   font-size: 0.9rem; /* 全体のフォントサイズを少し小さく */
   text-align: center;
-  background-color: #282c34; /* 全体の背景色 */
-  color: white; /* 全体の文字色 */
+  background-color: #1a1a2e; /* global.css と同じ色 */
+  color: #e0e0e0; /* global.css と同じ色 */
 }
 
 .messageHeader {
   margin: 0.2rem 0;
   font-size: 1.2rem;
+  color: #8be9fd; /* 明るい水色 */
 }
 
 .turnHeader {
   margin: 0.1rem 0;
   font-size: 1rem;
+  color: #f1fa8c; /* 明るい黄色 */
 }
 
 .gameArea {
@@ -26,10 +28,11 @@
   flex-grow: 1; /* 残りのスペースを埋める */
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
-  border: 2px solid #ccc;
+  border: 2px solid #44475a; /* ボーダー色を調整 */
   padding: 0.5rem;
   border-radius: 10px;
   box-sizing: border-box;
+  background-color: #282a36; /* ゲームエリアの背景色 */
 }
 
 .opponentArea,
@@ -41,16 +44,17 @@
   width: 48%;
   border-radius: 8px;
   box-sizing: border-box;
+  color: #f8f8f2; /* エリア内の文字色 */
 }
 
 .opponentArea {
-  border-color: red;
-  background-color: #ffe0e0;
+  border-color: #ff5555; /* 赤系 */
+  background-color: #44475a; /* 濃いグレー */
 }
 
 .yourArea {
-  border-color: green;
-  background-color: #e0ffe0;
+  border-color: #50fa7b; /* 緑系 */
+  background-color: #44475a; /* 濃いグレー */
 }
 
 .manaZone,
@@ -62,39 +66,45 @@
   margin-bottom: 0.5rem;
   border-radius: 5px;
   box-sizing: border-box;
+  background-color: #6272a4; /* ゾーンの背景色 */
 }
 
 .manaZone {
   min-height: 4rem;
-  border: 1px dashed #f00;
+  border: 1px dashed #bd93f9; /* 紫系 */
 }
 
 .playedCardsArea {
   min-height: 8rem;
-  border: 1px dashed #f00;
+  border: 1px dashed #ff79c6; /* ピンク系 */
   flex-grow: 1; /* 残りのスペースを埋める */
   overflow-y: auto; /* 必要に応じてスクロール */
 }
 
 .manaZoneOver,
 .playedCardsAreaOver {
-  border-color: blue !important;
-  background-color: #e0e0ff !important;
+  border-color: #8be9fd !important; /* 明るい水色 */
+  background-color: #6272a4 !important; /* ゾーンの背景色より少し明るく */
 }
 
 .emptyZoneText {
   font-size: 0.8rem;
-  color: #666;
+  color: #f8f8f2; /* エリア内の文字色と同じ */
 }
 
 .endTurnButton {
   padding: 0.5rem 1rem;
   margin-top: 0.5rem;
-  background-color: #4CAF50;
+  background-color: #bd93f9; /* 紫系 */
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 0.9rem;
   align-self: center; /* 中央揃え */
+  transition: background-color 0.3s ease; /* ホバーエフェクト */
+}
+
+.endTurnButton:hover {
+  background-color: #ff79c6; /* ホバーでピンク系 */
 }
