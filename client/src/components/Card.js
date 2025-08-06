@@ -20,20 +20,22 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
       ref={drag}
       style={{
         opacity: isDragging ? 0.5 : 1,
-        width: '60px', // カードの幅をさらに調整
-        height: '90px', // カードの高さをさらに調整
+        width: '5vw', // カードの幅をビューポート幅の5%に
+        height: '7.5vw', // カードの高さをビューポート幅の7.5%に (アスペクト比1:1.5)
+        minWidth: '40px', // 最小幅
+        minHeight: '60px', // 最小高さ
         border: '1px solid #f8f8f2', // ボーダー色を白系に
         borderRadius: '5px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'center',
-        margin: '2px', // マージンをさらに調整
+        margin: '0.2vw', // マージンをビューポート幅の0.2%に
         backgroundColor: imageUrl ? 'transparent' : '#6272a4', // 画像がある場合は透明、ない場合はゾーンの色に
         cursor: onClick ? 'pointer' : 'grab', // ドラッグ可能であることを示すカーソル
-        padding: '2px',
+        padding: '0.2vw',
         boxSizing: 'border-box',
-        fontSize: '0.7rem', // フォントサイズをさらに調整
+        fontSize: '0.7vw', // フォントサイズをビューポート幅の0.7%に
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
         backgroundSize: 'cover', // 画像をカード全体にフィットさせる
         backgroundPosition: 'center', // 画像を中央に配置

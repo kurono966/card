@@ -6,20 +6,22 @@ const Hand = ({ cards }) => {
     <div
       style={{
         border: '1px solid blue',
-        padding: '10px',
+        padding: '0.2rem',
         display: 'flex',
-        minHeight: '150px',
+        minHeight: '8rem', // 手札の最小高さを調整
         alignItems: 'center',
         justifyContent: 'center',
         flexWrap: 'wrap',
-        marginTop: '20px',
+        marginTop: '0.5rem',
+        flexGrow: 1, // 残りのスペースを埋める
+        overflowY: 'auto', // 必要に応じてスクロール
       }}
     >
       {cards.length === 0 ? (
         <p>Your hand is empty.</p>
       ) : (
         cards.map((card) => (
-          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
+          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
         ))
       )}
     </div>
