@@ -101,6 +101,8 @@ const App = () => {
   const handleEndTurn = () => {
     if (isYourTurnRef.current) { // useRef の値を使用
       socket.emit('end_turn');
+    } else {
+      alert("It's not your turn!");
     }
   };
 
