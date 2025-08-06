@@ -61,10 +61,10 @@ const CardDetail = ({ card, onClose }) => {
         <div style={{ fontSize: '2em', fontWeight: 'bold' }}>{card.value}</div>
         <div style={{ fontSize: '1em', alignSelf: 'flex-end' }}></div>
       </div>
-      <h3 style={{ marginTop: '15px' }}>Card ID: {card.id}</h3>
+      <h3 style={{ marginTop: '15px' }}>{card.name}</h3> {/* カード名称を表示 */}
       <p>Value: {card.value}</p>
       <p>Mana Cost: {card.manaCost}</p>
-      {/* ここにカードの説明などを追加できます */}
+      {card.effect && <p>Effect: {card.effect}</p>} {/* 効果があれば表示 */}
     </div>
   );
 };

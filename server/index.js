@@ -32,10 +32,16 @@ function initializePlayerState(socketId) {
   // 仮のデッキを作成 (1から10のカードを2枚ずつ)
   let deck = [];
   for (let i = 1; i <= 10; i++) {
-    // ランダムな画像URLを割り当てる
     const randomImageUrl = CARD_IMAGE_URLS[Math.floor(Math.random() * CARD_IMAGE_URLS.length)];
-    deck.push({ id: `card_${socketId}_${i}a`, value: i, manaCost: i, imageUrl: randomImageUrl });
-    deck.push({ id: `card_${socketId}_${i}b`, value: i, manaCost: i, imageUrl: randomImageUrl });
+    const cardName = `Card ${i}`; // カード名称
+    let cardEffect = null;
+
+    if (i === 5) { // 例: 5のカードに効果を付与
+      cardEffect = "Draw 1 card";
+    }
+
+    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect });
+    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect });
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
@@ -186,6 +192,24 @@ io.on('connection', (socket) => {
         players[socket.id].currentMana -= card.manaCost;
         players[socket.id].played.push(card);
         console.log(`[Server] Player ${socket.id} played card ${card.value} to field. Current Mana: ${players[socket.id].currentMana}`);
+
+        // カード効果の処理
+        if (card.effect) {
+          console.log(`[Server] Card effect triggered for ${socket.id}: ${card.effect}`);
+          if (card.effect === "Draw 1 card") {
+            if (players[socket.id].deck.length > 0) {
+              const drawnCard = players[socket.id].deck.shift();
+              players[socket.id].hand.push(drawnCard);
+              io.to(socket.id).emit('effect_triggered', `You drew a card (${drawnCard.name}) from ${card.name}'s effect!`);
+              console.log(`[Server] Player ${socket.id} drew ${drawnCard.name} due to effect.`);
+            } else {
+              io.to(socket.id).emit('effect_triggered', `You tried to draw a card from ${card.name}'s effect, but your deck is empty!`);
+              console.log(`[Server] Player ${socket.id} tried to draw, but deck is empty for effect.`);
+            }
+          }
+          // 他の効果があればここに追加
+        }
+
       } else {
         console.log(`[Server] Player ${socket.id} tried to play card ${card.value}, but not enough mana. Cost: ${card.manaCost}, Current: ${players[socket.id].currentMana}`);
         players[socket.id].hand.push(card); // 手札に戻す
@@ -219,7 +243,7 @@ io.on('connection', (socket) => {
         if (players[nextPlayerId].deck.length > 0) {
           const card = players[nextPlayerId].deck.shift();
           players[nextPlayerId].hand.push(card);
-          players[nextPlayerId].drawnThisTurn = true; // 自動ドローも1回とカウント
+          // players[nextPlayerId].drawnThisTurn = true; // 自動ドローは1回とカウントしない
           console.log(`[Server] Player ${nextPlayerId} automatically drew card: ${card.value}. Deck size: ${players[nextPlayerId].deck.length}`);
         } else {
           console.log(`[Server] Player ${nextPlayerId} could not draw, deck is empty.`);

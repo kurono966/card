@@ -33,6 +33,7 @@ const App = () => {
 
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
+  const [effectMessage, setEffectMessage] = useState(null); // 効果メッセージ
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -53,7 +54,7 @@ const App = () => {
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand);
-      setYourDeckSize(state.yourDeckSize);
+      setYourDeckSize(state.deckSize);
       setYourPlayedCards(state.yourPlayedCards);
       setYourManaZone(state.yourManaZone);
       setYourMaxMana(state.yourMaxMana);
@@ -68,10 +69,16 @@ const App = () => {
       setIsYourTurn(state.isYourTurn);
     });
 
+    socket.on('effect_triggered', (message) => {
+      setEffectMessage(message);
+      setTimeout(() => setEffectMessage(null), 3000); // 3秒後にメッセージを消す
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('game_state');
+      socket.off('effect_triggered');
     };
   }, []);
 
@@ -152,12 +159,12 @@ const App = () => {
         <div className={styles.gameArea}> {/* クラス名を使用 */}
           {/* 相手のエリア */}
           <div className={styles.opponentArea}> {/* クラス名を使用 */}
-            <h3>Opponent's Area</h3>
-            <p>Opponent's Deck Size: {opponentDeckSize}</p>
-            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
+            <h3>Opponent\'s Area</h3>
+            <p>Opponent\'s Deck Size: {opponentDeckSize}</p>
+            <p>Opponent\'s Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             
             <div className={styles.opponentFieldManaContainer}> {/* 新しいコンテナ */}
-              <h4>Opponent's Played Cards:</h4>
+              <h4>Opponent\'s Played Cards:</h4>
               <div
                 ref={dropField} // ドロップターゲットとして設定
                 className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
@@ -172,7 +179,7 @@ const App = () => {
               </div>
               
               <div className={styles.opponentManaZoneContainer}> {/* 相手のマナゾーンコンテナ */}
-                <h4>Opponent's Mana Zone:</h4>
+                <h4>Opponent\'s Mana Zone:</h4>
                 <div
                   ref={dropMana} // ドロップターゲットとして設定
                   className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
@@ -246,6 +253,23 @@ const App = () => {
         </div>
       </div>
       {selectedCardDetail && <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />}
+      {effectMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '10px',
+          zIndex: 1001,
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+        }}>
+          {effectMessage}
+        </div>
+      )}
     </DndProvider>
   );
 };
