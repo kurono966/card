@@ -5,10 +5,10 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, value, manaCost, onClick }) => {
+const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { id, value, manaCost },
+    item: { id, value, manaCost, imageUrl }, // imageUrl もドラッグアイテムに含める
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
@@ -33,6 +33,11 @@ const Card = ({ id, value, manaCost, onClick }) => {
         padding: '2px',
         boxSizing: 'border-box',
         fontSize: '0.7rem', // フォントサイズをさらに調整
+        backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
+        backgroundSize: 'cover', // 画像をカード全体にフィットさせる
+        backgroundPosition: 'center', // 画像を中央に配置
+        color: imageUrl ? 'white' : 'black', // 画像がある場合は文字色を白に
+        textShadow: imageUrl ? '1px 1px 2px black' : 'none', // 読みやすくするために影を追加
       }}
       onClick={onClick}
     >

@@ -23,8 +23,8 @@ function initializePlayerState(socketId) {
   // 仮のデッキを作成 (1から10のカードを2枚ずつ)
   let deck = [];
   for (let i = 1; i <= 10; i++) {
-    deck.push({ id: `card_${socketId}_${i}a`, value: i, manaCost: i }); // マナコストを追加
-    deck.push({ id: `card_${socketId}_${i}b`, value: i, manaCost: i }); // マナコストを追加
+    deck.push({ id: `card_${socketId}_${i}a`, value: i, manaCost: i, imageUrl: '/IMG_3.jpg' }); // マナコストと画像URLを追加
+    deck.push({ id: `card_${socketId}_${i}b`, value: i, manaCost: i, imageUrl: '/IMG_3.jpg' }); // マナコストと画像URLを追加
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
