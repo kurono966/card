@@ -56,11 +56,13 @@
 .opponentArea {
   border-color: #ff5555; /* 赤系 */
   background-color: #3a3c4a; /* 濃いグレー */
+  order: 1; /* 相手のエリアを先に表示 */
 }
 
 .yourArea {
   border-color: #50fa7b; /* 緑系 */
   background-color: #3a3c4a; /* 濃いグレー */
+  order: 2; /* 自分のエリアを後に表示 */
 }
 
 .manaZone,
