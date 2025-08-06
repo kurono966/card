@@ -37,7 +37,7 @@ const allCards = [
     name: "俊足の斥候",
     value: 4,
     manaCost: 4,
-    imageUrl: "/IMG_4.jpg",
+    imageUrl: "/IMG_4.png",
     effect: null,
     description: "素早い動きで敵を翻弄する。",
     attack: 4,
