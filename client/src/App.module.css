@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh; /* 画面の高さに合わせる */
-  overflow: hidden; /* スクロールを禁止 */
+  /* overflow: hidden; を削除 */
   font-size: 0.9rem; /* 全体のフォントサイズを少し小さく */
   text-align: center;
   background-color: #1a1a2e; /* global.css と同じ色 */
@@ -47,11 +47,12 @@
   display: flex;
   flex-direction: column;
   width: 100%; /* 幅を100%に */
-  height: 48%; /* 高さを48%に */
+  flex-grow: 1; /* 高さを柔軟に */
   border-radius: 8px;
   box-sizing: border-box;
   color: #f8f8f2; /* エリア内の文字色 */
   box-shadow: inset 0 0 8px rgba(0,0,0,0.3); /* 内側に影を追加 */
+  min-height: 45%; /* 最小高さを設定 */
 }
 
 .opponentArea {
@@ -74,6 +75,7 @@
   border-radius: 5px;
   box-sizing: border-box;
   background-color: #44475a; /* ゾーンの背景色 */
+  flex-shrink: 0; /* 縮小しない */
 }
 
 .manaZone {
