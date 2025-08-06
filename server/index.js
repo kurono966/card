@@ -37,6 +37,10 @@ function initializePlayerState(socketId) {
     let cardEffect = null;
     let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
 
+    // 攻撃力と耐久力をランダムな一桁の数字で設定
+    const attack = Math.floor(Math.random() * 9) + 1; // 1から9
+    const defense = Math.floor(Math.random() * 9) + 1; // 1から9
+
     if (i === 5) { // 例: 5のカードに効果を付与
       cardEffect = "Draw 1 card";
       cardDescription = "When played, draw 1 card from your deck.";
@@ -46,8 +50,8 @@ function initializePlayerState(socketId) {
       cardDescription = "A powerful card, but requires a lot of mana.";
     }
 
-    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription });
-    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription });
+    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
+    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
