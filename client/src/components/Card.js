@@ -5,11 +5,11 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, name, value, manaCost, imageUrl, effect, description, onCardAction }) => { // effect と description を追加
+const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction }) => { // effect, description, attack, defense を追加
   console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Image URL: ${imageUrl}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { id, name, value, manaCost, imageUrl, effect, description }, // effect と description もドラッグアイテムに含める
+    item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense }, // effect, description, attack, defense もドラッグアイテムに含める
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
@@ -18,7 +18,7 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, onCard
   const handleMouseEnter = () => {
     if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
-      onCardAction({ id, name, value, manaCost, imageUrl, effect, description }, 'hover'); // effect と description を渡す
+      onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'hover'); // effect, description, attack, defense を渡す
     }
   };
 
@@ -32,7 +32,7 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, onCard
   const handleClick = () => {
     if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
-      onCardAction({ id, name, value, manaCost, imageUrl, effect, description }, 'click'); // effect と description を渡す
+      onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'click'); // effect, description, attack, defense を渡す
     }
   };
 

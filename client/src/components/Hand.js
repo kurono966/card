@@ -21,7 +21,7 @@ const Hand = ({ cards, onCardAction }) => {
         <p>Your hand is empty.</p>
       ) : (
         cards.map((card) => (
-          <Card key={card.id} id={card.id} name={card.name} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} effect={card.effect} description={card.description} onCardAction={onCardAction} /> // effect と description を追加
+          <Card key={card.id} id={card.id} name={card.name} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} effect={card.effect} description={card.description} attack={card.attack} defense={card.defense} onCardAction={onCardAction} /> // effect, description, attack, defense を追加
         ))
       )}
     </div>
