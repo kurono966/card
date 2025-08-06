@@ -8,7 +8,7 @@ const Hand = ({ cards }) => {
         border: '1px solid blue',
         padding: '0.2rem',
         display: 'flex',
-        minHeight: '8rem', // 手札の最小高さを調整
+        minHeight: '6rem', // 手札の最小高さをさらに調整
         alignItems: 'center',
         justifyContent: 'center',
         flexWrap: 'wrap',

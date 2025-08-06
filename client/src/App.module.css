@@ -7,17 +7,18 @@
   text-align: center;
   background-color: #1a1a2e; /* global.css と同じ色 */
   color: #e0e0e0; /* global.css と同じ色 */
+  padding: 0.5vh 0; /* 上下のパディングをビューポートの高さに合わせる */
 }
 
 .messageHeader {
-  margin: 0.2rem 0;
+  margin: 0.2vh 0; /* マージンをビューポートの高さに合わせる */
   font-size: 1.2rem;
   color: #8be9fd; /* 明るい水色 */
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
 }
 
 .turnHeader {
-  margin: 0.1rem 0;
+  margin: 0.1vh 0; /* マージンをビューポートの高さに合わせる */
   font-size: 1rem;
   color: #f1fa8c; /* 明るい黄色 */
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
@@ -32,7 +33,7 @@
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
   border: 2px solid #44475a; /* ボーダー色を調整 */
-  padding: 0.5rem;
+  padding: 0.5rem; /* パディングを維持 */
   border-radius: 10px;
   box-sizing: border-box;
   background-color: #282a36; /* ゲームエリアの背景色 */

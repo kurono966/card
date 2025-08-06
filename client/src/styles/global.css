@@ -1,5 +1,11 @@
-body {
+html, body, #root {
   margin: 0;
+  padding: 0;
+  height: 100%; /* html, body, #root も高さ100%にする */
+  overflow: hidden; /* 全体でスクロールを禁止 */
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
