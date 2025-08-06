@@ -44,6 +44,7 @@ function initializePlayerState(socketId) {
     isTurn: false,
     manaPlayedThisTurn: false, // このターンにマナを置いたか
     drawnThisTurn: false, // このターンにドローしたか
+    life: 20, // プレイヤーのライフを20に設定
   };
   console.log(`[Server] Player ${socketId} initialized with deck size: ${deck.length}`);
 }
