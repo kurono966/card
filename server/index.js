@@ -38,8 +38,8 @@ function initializePlayerState(socketId) {
     let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
 
     // 攻撃力と耐久力をランダムな一桁の数字で設定
-    const attack = Math.floor(Math.random() * 9) + 1; // 1から9
-    const defense = Math.floor(Math.random() * 9) + 1; // 1から9
+    const attack = i; // カードのvalue (1から10) を攻撃力に
+    const defense = i; // カードのvalue (1から10) を耐久力に
 
     if (i === 5) { // 例: 5のカードに効果を付与
       cardEffect = "Draw 1 card";
