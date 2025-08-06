@@ -311,15 +311,15 @@ io.on('connection', (socket) => {
   });
 });
 
-const path = require('path');
+// const path = require('path');
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/build')));
+// // Serve static files from the React app
+// app.use(express.static(path.join(__dirname, '../client/build')));
 
-// All remaining requests return the React app, so it can handle routing.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-});
+// // All remaining requests return the React app, so it can handle routing.
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+// });
 
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
