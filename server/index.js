@@ -14,13 +14,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3000;
 
 // 使用する画像ファイルのリスト
-const CARD_IMAGE_URLS = [
-  '/IMG_1.jpg',
-  '/IMG_2.jpg',
-  '/IMG_3.jpg',
-  '/IMG_4.jpg',
-  '/IMG_5.jpg',
-];
+const allCards = require('./cardData');
 
 // --- ゲームの状態管理 --- //
 let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false } }
@@ -29,29 +23,13 @@ let currentPlayerIndex = 0; // 現在のターンのプレイヤーのインデ�
 let gameActive = false; // ゲームがアクティブかどうかを示すフラグ
 
 function initializePlayerState(socketId) {
-  // 仮のデッキを作成 (1から10のカードを2枚ずつ)
   let deck = [];
-  for (let i = 1; i <= 10; i++) {
-    const randomImageUrl = CARD_IMAGE_URLS[Math.floor(Math.random() * CARD_IMAGE_URLS.length)];
-    const cardName = `Card ${i}`; // カード名称
-    let cardEffect = null;
-    let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
-
-    // 攻撃力と耐久力をランダムな一桁の数字で設定
-    const attack = i; // カードのvalue (1から10) を攻撃力に
-    const defense = i; // カードのvalue (1から10) を耐久力に
-
-    if (i === 5) { // 例: 5のカードに効果を付与
-      cardEffect = "Draw 1 card";
-      cardDescription = "When played, draw 1 card from your deck.";
-    } else if (i === 1) {
-      cardDescription = "A very weak card, but it costs little mana.";
-    } else if (i === 10) {
-      cardDescription = "A powerful card, but requires a lot of mana.";
-    }
-
-    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
-    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription, attack: attack, defense: defense });
+  // allCardsからカードを2枚ずつデッキに追加
+  for (let i = 0; i < 10; i++) { // 最初の10種類のカードを使用
+    const card = allCards[i];
+    // 各カードにユニークなIDを付与してデッキに追加
+    deck.push({ ...card, id: `${card.id}_${socketId}_a` });
+    deck.push({ ...card, id: `${card.id}_${socketId}_b` });
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
