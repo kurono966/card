@@ -14,7 +14,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3000;
 
 // --- ゲームの状態管理 --- //
-let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false } }
+let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false } }
 let playerOrder = []; // プレイヤーの順番を保持する配列
 let currentPlayerIndex = 0; // 現在のターンのプレイヤーのインデックス
 let gameActive = false; // ゲームがアクティブかどうかを示すフラグ
@@ -34,9 +34,10 @@ function initializePlayerState(socketId) {
     hand: [],
     played: [],
     manaZone: [], // マナゾーン
-    maxMana: 0, // 最大マナ
+    maxMana: 0, // 最大マナを0に初期化
     currentMana: 0, // 現在のマナ
     isTurn: false,
+    manaPlayedThisTurn: false, // このターンにマナを置いたか
   };
   console.log(`[Server] Player ${socketId} initialized with deck size: ${deck.length}`);
 }
@@ -97,9 +98,7 @@ io.on('connection', (socket) => {
       // 2人揃ったらゲーム開始
       // 最初のプレイヤーのターンを設定
       players[playerOrder[0]].isTurn = true;
-      // 最初のターンのプレイヤーのマナを回復
-      players[playerOrder[0]].maxMana = 1; // 初期マナ
-      players[playerOrder[0]].currentMana = players[playerOrder[0]].maxMana;
+      // 最初のターンのプレイヤーのマナは0/0のまま
 
       console.log('[Server] Game started with players:', playerOrder);
       emitFullGameState();
@@ -154,9 +153,16 @@ io.on('connection', (socket) => {
     const [card] = players[socket.id].hand.splice(cardIndex, 1);
 
     if (playType === 'mana') {
+      if (players[socket.id].manaPlayedThisTurn) {
+        console.log(`[Server] Player ${socket.id} tried to play card to mana zone, but already played mana this turn.`);
+        players[socket.id].hand.push(card); // 手札に戻す
+        emitFullGameState();
+        return;
+      }
       players[socket.id].manaZone.push(card);
       players[socket.id].maxMana++; // マナゾーンに置くと最大マナが増える
       players[socket.id].currentMana = players[socket.id].maxMana; // マナ回復
+      players[socket.id].manaPlayedThisTurn = true; // このターンはマナを置いた
       console.log(`[Server] Player ${socket.id} played card ${card.value} to mana zone. Max Mana: ${players[socket.id].maxMana}`);
     } else if (playType === 'field') {
       if (players[socket.id].currentMana >= card.manaCost) {
@@ -189,6 +195,7 @@ io.on('connection', (socket) => {
     if (players[nextPlayerId]) {
         players[nextPlayerId].isTurn = true; // 次のプレイヤーのターンを開始
         players[nextPlayerId].currentMana = players[nextPlayerId].maxMana; // 次のプレイヤーのマナを回復
+        players[nextPlayerId].manaPlayedThisTurn = false; // 次のターンのマナプレイフラグをリセット
         console.log(`[Server] Turn ended for ${socket.id}. Next turn for ${nextPlayerId}`);
     } else {
         console.log(`[Server] Error: Next player ${nextPlayerId} not found after turn end. Resetting game.`);
@@ -228,6 +235,7 @@ io.on('connection', (socket) => {
     if (gameActive && playerOrder.length === 1 && players[playerOrder[0]]) {
         players[playerOrder[0]].isTurn = true; // 残ったプレイヤーにターンを渡す
         players[playerOrder[0]].currentMana = players[playerOrder[0]].maxMana; // マナを回復
+        players[playerOrder[0]].manaPlayedThisTurn = false; // マナプレイフラグをリセット
         console.log(`[Server] Turn passed to remaining player: ${playerOrder[0]}`);
     }
     emitFullGameState(); // 残ったプレイヤーに状態を更新
