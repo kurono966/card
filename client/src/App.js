@@ -175,7 +175,7 @@ const App = () => {
                 <p style={{ fontSize: '0.8rem' }}>Empty</p>
               ) : (
                 opponentManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} />
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
                 ))
               )}
             </div>
@@ -193,7 +193,7 @@ const App = () => {
                 <p style={{ fontSize: '0.8rem' }}>No cards played by opponent.</p>
               ) : (
                 opponentPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} />
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
                 ))
               )}
             </div>
@@ -219,7 +219,7 @@ const App = () => {
               ref={dropMana} // ドロップターゲットとして設定
               style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem', marginBottom: '0.5rem',
-                backgroundColor: isOverMana ? '#e0e0e0' : 'transparent',
+                backgroundColor: isOverMana ? '#e0ffe0' : 'transparent',
                 flexShrink: 0, // 縮小しない
               }}
             >
@@ -227,7 +227,7 @@ const App = () => {
                 <p>Empty</p>
               ) : (
                 yourManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} />
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
                 ))
               )}
             </div>
@@ -247,7 +247,7 @@ const App = () => {
                 <p>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} />
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
                 ))
               )}
             </div>

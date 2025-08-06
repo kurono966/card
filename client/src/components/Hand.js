@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from './Card';
 
-const Hand = ({ cards }) => { // onPlayCard を受け取らないように変更
+const Hand = ({ cards }) => {
   return (
     <div
       style={{
@@ -19,7 +19,7 @@ const Hand = ({ cards }) => { // onPlayCard を受け取らないように変更
         <p>Your hand is empty.</p>
       ) : (
         cards.map((card) => (
-          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} /> // onClick を渡さない
+          <Card key={card.id} id={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
         ))
       )}
     </div>
