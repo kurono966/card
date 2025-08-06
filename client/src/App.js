@@ -7,6 +7,8 @@ import Card from './components/Card';
 import Deck from './components/Deck';
 import Hand from './components/Hand';
 
+import styles from './App.module.css'; // CSS Modulesをインポート
+
 const socket = io('https://neocard-server.onrender.com');
 
 const ItemTypes = {
@@ -126,54 +128,23 @@ const App = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div style={{ 
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh', // 画面の高さに合わせる
-        overflow: 'hidden', // スクロールを禁止
-        fontSize: '0.9rem', // 全体のフォントサイズを少し小さく
-      }}>
-        <h1 style={{ margin: '0.2rem 0', fontSize: '1.2rem' }}>{message}</h1>
-        <h2 style={{ margin: '0.1rem 0', fontSize: '1rem' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+      <div className={styles.appContainer}> {/* クラス名を使用 */}
+        <h1 className={styles.messageHeader}>{message}</h1>
+        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
-        <div style={{ 
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'stretch', // 高さを揃える
-          flexGrow: 1, // 残りのスペースを埋める
-          width: '98vw', // 画面幅の98%を使用
-          margin: '0 auto',
-          border: '2px solid #ccc',
-          padding: '0.5rem',
-          borderRadius: '10px',
-          boxSizing: 'border-box',
-        }}>
+        <div className={styles.gameArea}> {/* クラス名を使用 */}
           {/* 相手のエリア */}
-          <div style={{ 
-            border: '1px solid red',
-            padding: '0.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            width: '48%',
-            borderRadius: '8px',
-            backgroundColor: '#ffe0e0',
-            boxSizing: 'border-box',
-          }}>
+          <div className={styles.opponentArea}> {/* クラス名を使用 */}
             <h3>Opponent's Area</h3>
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             <h4>Opponent's Mana Zone:</h4>
             <div
               ref={dropMana} // ドロップターゲットとして設定
-              style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #f00', padding: '0.2rem', marginBottom: '0.5rem',
-                backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
-                flexShrink: 0, // 縮小しない
-              }}
+              className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
             >
               {opponentManaZone.length === 0 ? (
-                <p style={{ fontSize: '0.8rem' }}>Empty</p>
+                <p className={styles.emptyZoneText}>Empty</p>
               ) : (
                 opponentManaZone.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
@@ -183,15 +154,10 @@ const App = () => {
             <h4>Opponent's Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
-              style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #f00', padding: '0.2rem',
-                backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
-                flexGrow: 1, // 残りのスペースを埋める
-                overflowY: 'auto', // 必要に応じてスクロール
-              }}
+              className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
             >
               {opponentPlayedCards.length === 0 ? (
-                <p style={{ fontSize: '0.8rem' }}>No cards played by opponent.</p>
+                <p className={styles.emptyZoneText}>No cards played by opponent.</p>
               ) : (
                 opponentPlayedCards.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
@@ -201,16 +167,7 @@ const App = () => {
           </div>
 
           {/* 自分のエリア */}
-          <div style={{ 
-            border: '1px solid green',
-            padding: '0.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            width: '48%',
-            borderRadius: '8px',
-            backgroundColor: '#e0ffe0',
-            boxSizing: 'border-box',
-          }}>
+          <div className={styles.yourArea}> {/* クラス名を使用 */}
             <h3>Your Area</h3>
             <Deck onDrawCard={handleDrawCard} />
             <p>Your Deck Size: {yourDeckSize}</p>
@@ -218,14 +175,10 @@ const App = () => {
             <h4>Your Mana Zone:</h4>
             <div
               ref={dropMana} // ドロップターゲットとして設定
-              style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem', marginBottom: '0.5rem',
-                backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
-                flexShrink: 0, // 縮小しない
-              }}
+              className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
             >
               {yourManaZone.length === 0 ? (
-                <p>Empty</p>
+                <p className={styles.emptyZoneText}>Empty</p>
               ) : (
                 yourManaZone.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
@@ -237,22 +190,17 @@ const App = () => {
             <h4>Your Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
-              style={{ 
-                display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem',
-                backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
-                flexGrow: 1, // 残りのスペースを埋める
-                overflowY: 'auto', // 必要に応じてスクロール
-              }}
+              className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
             >
               {yourPlayedCards.length === 0 ? (
-                <p>No cards played by you.</p>
+                <p className={styles.emptyZoneText}>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
                   <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
                 ))
               )}
             </div>
-            <button onClick={handleEndTurn} style={{ padding: '0.5rem 1rem', marginTop: '0.5rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem' }}>
+            <button onClick={handleEndTurn} className={styles.endTurnButton}> {/* クラス名を使用 */}
               End Turn
             </button>
           </div>
