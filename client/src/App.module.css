@@ -13,12 +13,14 @@
   margin: 0.2rem 0;
   font-size: 1.2rem;
   color: #8be9fd; /* 明るい水色 */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
 }
 
 .turnHeader {
   margin: 0.1rem 0;
   font-size: 1rem;
   color: #f1fa8c; /* 明るい黄色 */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
 }
 
 .gameArea {
@@ -33,6 +35,7 @@
   border-radius: 10px;
   box-sizing: border-box;
   background-color: #282a36; /* ゲームエリアの背景色 */
+  box-shadow: 0 0 15px rgba(0,0,0,0.5); /* 全体に影を追加 */
 }
 
 .opponentArea,
@@ -45,16 +48,17 @@
   border-radius: 8px;
   box-sizing: border-box;
   color: #f8f8f2; /* エリア内の文字色 */
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3); /* 内側に影を追加 */
 }
 
 .opponentArea {
   border-color: #ff5555; /* 赤系 */
-  background-color: #44475a; /* 濃いグレー */
+  background-color: #3a3c4a; /* 濃いグレー */
 }
 
 .yourArea {
   border-color: #50fa7b; /* 緑系 */
-  background-color: #44475a; /* 濃いグレー */
+  background-color: #3a3c4a; /* 濃いグレー */
 }
 
 .manaZone,
@@ -66,7 +70,7 @@
   margin-bottom: 0.5rem;
   border-radius: 5px;
   box-sizing: border-box;
-  background-color: #6272a4; /* ゾーンの背景色 */
+  background-color: #44475a; /* ゾーンの背景色 */
 }
 
 .manaZone {
@@ -84,7 +88,7 @@
 .manaZoneOver,
 .playedCardsAreaOver {
   border-color: #8be9fd !important; /* 明るい水色 */
-  background-color: #6272a4 !important; /* ゾーンの背景色より少し明るく */
+  background-color: #55586b !important; /* ゾーンの背景色より少し明るく */
 }
 
 .emptyZoneText {
@@ -103,6 +107,7 @@
   font-size: 0.9rem;
   align-self: center; /* 中央揃え */
   transition: background-color 0.3s ease; /* ホバーエフェクト */
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5); /* ボタンに影を追加 */
 }
 
 .endTurnButton:hover {

@@ -37,9 +37,9 @@ const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
         backgroundSize: 'cover', // 画像をカード全体にフィットさせる
         backgroundPosition: 'center', // 画像を中央に配置
-        color: imageUrl ? '#f8f8f2' : '#f8f8f2', // 画像がある場合も文字色を白系に
-        textShadow: imageUrl ? '1px 1px 2px rgba(0,0,0,0.7)' : 'none', // 読みやすくするために影を濃く
-        boxShadow: '2px 2px 5px rgba(0,0,0,0.5)', // カードに影を追加
+        color: '#f8f8f2', // 文字色を白系に統一
+        textShadow: '1px 1px 2px rgba(0,0,0,0.9)', // 読みやすくするために影を濃く
+        boxShadow: '3px 3px 8px rgba(0,0,0,0.6)', // カードに影を追加
       }}
       onClick={onClick}
     >
