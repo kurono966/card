@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -29,6 +29,12 @@ const App = () => {
   const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
 
   const [isYourTurn, setIsYourTurn] = useState(false);
+
+  // isYourTurn の最新の値を useRef で保持
+  const isYourTurnRef = useRef(isYourTurn);
+  useEffect(() => {
+    isYourTurnRef.current = isYourTurn;
+  }, [isYourTurn]);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -65,7 +71,7 @@ const App = () => {
   }, []);
 
   const handleDrawCard = () => {
-    if (isYourTurn) {
+    if (isYourTurnRef.current) { // useRef の値を使用
       socket.emit('draw_card');
     } else {
       alert("It's not your turn!");
@@ -78,7 +84,7 @@ const App = () => {
   };
 
   const handleEndTurn = () => {
-    if (isYourTurn) {
+    if (isYourTurnRef.current) { // useRef の値を使用
       socket.emit('end_turn');
     } else {
       alert("It's not your turn!");
@@ -90,7 +96,7 @@ const App = () => {
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
       console.log('Card dropped on Mana Zone:', item.id);
-      if (!isYourTurn) {
+      if (!isYourTurnRef.current) { // useRef の値を使用
         alert("It's not your turn!");
         return;
       }
@@ -106,7 +112,7 @@ const App = () => {
     accept: ItemTypes.CARD,
     drop: (item, monitor) => {
       console.log('Card dropped on Field:', item.id);
-      if (!isYourTurn) {
+      if (!isYourTurnRef.current) { // useRef の値を使用
         alert("It's not your turn!");
         return;
       }
