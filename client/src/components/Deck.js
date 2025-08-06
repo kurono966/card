@@ -4,8 +4,10 @@ const Deck = () => {
   return (
     <div
       style={{
-        width: '60px', // カードの幅に合わせる
-        height: '90px', // カードの高さに合わせる
+        width: '5vw', // カードの幅に合わせる
+        height: '7.5vw', // カードの高さに合わせる
+        minWidth: '40px', // 最小幅
+        minHeight: '60px', // 最小高さ
         border: '2px dashed gray',
         borderRadius: '8px',
         display: 'flex',

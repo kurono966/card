@@ -73,10 +73,7 @@ const App = () => {
     };
   }, []);
 
-  const handleDrawCard = () => {
-    // 自動ドローになったため、この関数は不要
-    console.log('Draw Card button clicked (should not happen).');
-  };
+  // handleDrawCard 関数を削除
 
   const handlePlayCard = (cardId) => {
     // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
