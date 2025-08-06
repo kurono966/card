@@ -125,10 +125,10 @@ const App = () => {
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', width: '90%', margin: '20px auto', border: '2px solid #ccc', padding: '20px', borderRadius: '10px' }}>
           {/* 相手のエリア */}
           <div style={{ border: '1px solid red', padding: '10px', minHeight: '250px', width: '45%', borderRadius: '8px', backgroundColor: '#ffe0e0' }}>
-            <h3>Opponent\'s Area</h3>
-            <p>Opponent\'s Deck Size: {opponentDeckSize}</p>
-            <p>Opponent\'s Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
-            <h4>Opponent\'s Mana Zone:</h4>
+            <h3>Opponent's Area</h3>
+            <p>Opponent's Deck Size: {opponentDeckSize}</p>
+            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
+            <h4>Opponent's Mana Zone:</h4>
             <div
               ref={dropMana} // ドロップターゲットとして設定
               style={{
