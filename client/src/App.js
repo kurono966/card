@@ -169,24 +169,7 @@ const App = () => {
           {/* 自分のエリア */}
           <div className={styles.yourArea}> {/* クラス名を使用 */}
             <h3>Your Area</h3>
-            <Deck onDrawCard={handleDrawCard} />
-            <p>Your Deck Size: {yourDeckSize}</p>
-            <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
-            <h4>Your Mana Zone:</h4>
-            <div
-              ref={dropMana} // ドロップターゲットとして設定
-              className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
-            >
-              {yourManaZone.length === 0 ? (
-                <p className={styles.emptyZoneText}>Empty</p>
-              ) : (
-                yourManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
-                ))
-              )}
-            </div>
-            <h3>Your Hand:</h3>
-            <Hand cards={yourHand} onPlayCard={handlePlayCard} />
+            {/* 自分のフィールドを上部に設置 */}
             <h4>Your Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
@@ -200,9 +183,42 @@ const App = () => {
                 ))
               )}
             </div>
-            <button onClick={handleEndTurn} className={styles.endTurnButton}> {/* クラス名を使用 */}
-              End Turn
-            </button>
+
+            {/* マナゾーンと手札を横並びにするコンテナ */}
+            <div className={styles.manaHandContainer}> 
+              {/* 自分のマナゾーンを手札の左に配置 */}
+              <div className={styles.manaZoneContainer}> 
+                <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
+                <h4>Your Mana Zone:</h4>
+                <div
+                  ref={dropMana} // ドロップターゲットとして設定
+                  className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
+                >
+                  {yourManaZone.length === 0 ? (
+                    <p className={styles.emptyZoneText}>Empty</p>
+                  ) : (
+                    yourManaZone.map(card => (
+                      <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* 自分の手札 */}
+              <div className={styles.handContainer}> 
+                <h3>Your Hand:</h3>
+                <Hand cards={yourHand} onPlayCard={handlePlayCard} />
+              </div>
+            </div>
+
+            {/* デッキとターン終了ボタン */}
+            <div className={styles.deckEndTurnContainer}> 
+              <Deck onDrawCard={handleDrawCard} />
+              <p>Your Deck Size: {yourDeckSize}</p>
+              <button onClick={handleEndTurn} className={styles.endTurnButton}> {/* クラス名を使用 */}
+                End Turn
+              </button>
+            </div>
           </div>
         </div>
       </div>

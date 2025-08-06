@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh; /* 画面の高さに合わせる */
-  /* overflow: hidden; を削除 */
+  overflow: hidden; /* スクロールを禁止 */
   font-size: 0.9rem; /* 全体のフォントサイズを少し小さく */
   text-align: center;
   background-color: #1a1a2e; /* global.css と同じ色 */
@@ -11,14 +11,14 @@
 }
 
 .messageHeader {
-  margin: 0.2vh 0; /* マージンをビューポートの高さに合わせる */
+  margin: 0.2vh 0;
   font-size: 1.2rem;
   color: #8be9fd; /* 明るい水色 */
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
 }
 
 .turnHeader {
-  margin: 0.1vh 0; /* マージンをビューポートの高さに合わせる */
+  margin: 0.1vh 0;
   font-size: 1rem;
   color: #f1fa8c; /* 明るい黄色 */
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
@@ -63,6 +63,41 @@
 .yourArea {
   border-color: #50fa7b; /* 緑系 */
   background-color: #3a3c4a; /* 濃いグレー */
+}
+
+/* 自分のエリア内のレイアウト調整 */
+.yourArea h3, .yourArea p, .yourArea h4 {
+  margin-bottom: 0.2rem; /* 各見出しと段落の下マージンを調整 */
+}
+
+.manaHandContainer {
+  display: flex;
+  flex-direction: row; /* マナゾーンと手札を横に並べる */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  justify-content: space-around;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
+
+.manaZoneContainer {
+  display: flex;
+  flex-direction: column;
+  width: 25%; /* マナゾーンの幅 */
+  min-width: 80px; /* 最小幅 */
+  align-items: center;
+}
+
+.handContainer {
+  flex-grow: 1; /* 手札が残りのスペースを埋める */
+  width: 70%; /* 手札の幅 */
+}
+
+.deckEndTurnContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+  gap: 1rem; /* 要素間のスペース */
 }
 
 .manaZone,
