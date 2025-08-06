@@ -65,6 +65,10 @@ const App = () => {
       setYourMaxMana(state.maxMana);
       setYourCurrentMana(state.currentMana);
 
+      console.log('[App.js] After state update - yourManaZone:', state.manaZone);
+      console.log('[App.js] After state update - yourMaxMana:', state.maxMana);
+      console.log('[App.js] After state update - yourCurrentMana:', state.currentMana);
+
       setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
       setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
       setOpponentDeckSize(state.opponentDeckSize);
