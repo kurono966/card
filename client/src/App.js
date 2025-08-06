@@ -61,9 +61,13 @@ const App = () => {
       setYourHand(state.yourHand || []); // デフォルト値を設定
       setYourDeckSize(state.deckSize);
       setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
-      setYourManaZone(state.manaZone || []); // デフォルト値を設定
-      setYourMaxMana(state.maxMana);
-      setYourCurrentMana(state.currentMana);
+      setYourManaZone(state.yourManaZone || []); // 修正
+      setYourMaxMana(state.yourMaxMana); // 修正
+      setYourCurrentMana(state.yourCurrentMana); // 修正
+
+      console.log('[App.js] After state update - yourManaZone:', state.yourManaZone);
+      console.log('[App.js] After state update - yourMaxMana:', state.yourMaxMana);
+      console.log('[App.js] After state update - yourCurrentMana:', state.yourCurrentMana);
 
       setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
       setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
