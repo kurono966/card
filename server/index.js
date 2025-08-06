@@ -19,7 +19,7 @@ const CARD_IMAGE_URLS = [
   '/IMG_2.jpg',
   '/IMG_3.jpg',
   '/IMG_4.jpg',
-  '/IMG_5.jpg', // 必要に応じて画像を追加してください
+  '/IMG_5.jpg',
 ];
 
 // --- ゲームの状態管理 --- //
@@ -32,17 +32,22 @@ function initializePlayerState(socketId) {
   // 仮のデッキを作成 (1から10のカードを2枚ずつ)
   let deck = [];
   for (let i = 1; i <= 10; i++) {
-    // ランダムな画像URLを割り当てる
     const randomImageUrl = CARD_IMAGE_URLS[Math.floor(Math.random() * CARD_IMAGE_URLS.length)];
     const cardName = `Card ${i}`; // カード名称
     let cardEffect = null;
+    let cardDescription = `This is a basic card with value ${i}.`; // デフォルトの説明
 
     if (i === 5) { // 例: 5のカードに効果を付与
       cardEffect = "Draw 1 card";
+      cardDescription = "When played, draw 1 card from your deck.";
+    } else if (i === 1) {
+      cardDescription = "A very weak card, but it costs little mana.";
+    } else if (i === 10) {
+      cardDescription = "A powerful card, but requires a lot of mana.";
     }
 
-    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect });
-    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect });
+    deck.push({ id: `card_${socketId}_${i}a`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription });
+    deck.push({ id: `card_${socketId}_${i}b`, name: cardName, value: i, manaCost: i, imageUrl: randomImageUrl, effect: cardEffect, description: cardDescription });
   }
   // デッキをシャッフル
   deck = shuffleArray(deck);
