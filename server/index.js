@@ -6,12 +6,21 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app", "https://neocard-client-5rubsg1vm-kuronos-projects.vercel.app"], // Allow connections from React dev server and Vercel client
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app"], // Allow connections from React dev server and Vercel client
     methods: ["GET", "POST"]
   }
 });
 
 const PORT = process.env.PORT || 3000;
+
+// 使用する画像ファイルのリスト
+const CARD_IMAGE_URLS = [
+  '/IMG_1.jpg',
+  '/IMG_2.jpg',
+  '/IMG_3.jpg',
+  '/IMG_4.jpg',
+  '/IMG_5.jpg', // 必要に応じて画像を追加してください
+];
 
 // --- ゲームの状態管理 --- //
 let players = {}; // { socketId: { deck: [], hand: [], played: [], manaZone: [], maxMana: 0, currentMana: 0, isTurn: false, manaPlayedThisTurn: false, drawnThisTurn: false } }
