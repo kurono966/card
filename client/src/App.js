@@ -59,15 +59,15 @@ const App = () => {
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand || []); // デフォルト値を設定
-      setYourDeckSize(state.deckSize);
+      setYourDeckSize(state.yourDeckSize);
       setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
-      setYourManaZone(state.manaZone || []); // デフォルト値を設定
-      setYourMaxMana(state.maxMana);
-      setYourCurrentMana(state.currentMana);
+      setYourManaZone(state.yourManaZone || []); // 修正
+      setYourMaxMana(state.yourMaxMana);
+      setYourCurrentMana(state.yourCurrentMana);
 
-      console.log('[App.js] After state update - yourManaZone:', state.manaZone);
-      console.log('[App.js] After state update - yourMaxMana:', state.maxMana);
-      console.log('[App.js] After state update - yourCurrentMana:', state.currentMana);
+      console.log('[App.js] After state update - yourManaZone:', state.yourManaZone);
+      console.log('[App.js] After state update - yourMaxMana:', state.yourMaxMana);
+      console.log('[App.js] After state update - yourCurrentMana:', state.yourCurrentMana);
 
       setOpponentPlayedCards(state.opponentPlayedCards || []); // デフォルト値を設定
       setOpponentManaZone(state.opponentManaZone || []); // デフォルト値を設定
