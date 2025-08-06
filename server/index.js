@@ -8,7 +8,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app", "https://neocard-client-24q40927s-kuronos-projects.vercel.app", "https://neocard-client-igeqrwa2k-kuronos-projects.vercel.app"], // Allow connections from React dev server and Vercel client, and the new Vercel client URL
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app", "https://neocard-client-24q40927s-kuronos-projects.vercel.app", "https://neocard-client-igeqrwa2k-kuronos-projects.vercel.app", "https://neocard-client-ef15el161-kuronos-projects.vercel.app"], // Allow connections from React dev server and Vercel client, and the new Vercel client URL
     methods: ["GET", "POST"]
   }
 });
