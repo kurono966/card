@@ -60,11 +60,10 @@ const App = () => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand);
       setYourDeckSize(state.deckSize);
-      setYourPlayedCards(state.yourPlayedCards);
-      setYourManaZone(state.manaZone); 
-      setYourMaxMana(state.maxMana); 
-      setYourCurrentMana(state.currentMana); 
-      console.log('[App.js] Your Mana Zone after update:', state.manaZone); // デバッグログ
+      setYourPlayedCards(state.played);
+      setYourManaZone(state.manaZone);
+      setYourMaxMana(state.maxMana);
+      setYourCurrentMana(state.currentMana);
 
       setOpponentPlayedCards(state.opponentPlayedCards);
       setOpponentManaZone(state.opponentManaZone);
@@ -104,6 +103,24 @@ const App = () => {
       socket.emit('end_turn');
     } else {
       alert("It's not your turn!");
+    }
+  };
+
+  // カード詳細表示のハンドラ
+  const handleCardAction = (card, actionType) => {
+    if (actionType === 'hover') {
+      // デスクトップでのマウスオーバー時
+      if (window.innerWidth > 768) { // 例: 画面幅が768pxより大きい場合のみホバーで表示
+        setSelectedCardDetail(card);
+      }
+    } else if (actionType === 'leave') {
+      // デスクトップでのマウスが離れた時
+      if (window.innerWidth > 768) {
+        setSelectedCardDetail(null);
+      }
+    } else if (actionType === 'click') {
+      // モバイルでのタップ時、またはデスクトップでのクリック時
+      setSelectedCardDetail(card);
     }
   };
 
