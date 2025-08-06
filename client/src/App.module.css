@@ -25,8 +25,9 @@
 
 .gameArea {
   display: flex;
-  justify-content: space-around;
-  align-items: stretch; /* 高さを揃える */
+  flex-direction: column; /* 子要素を縦に並べる */
+  justify-content: space-between; /* 上下のエリア間にスペースを確保 */
+  align-items: center; /* 中央揃え */
   flex-grow: 1; /* 残りのスペースを埋める */
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
@@ -44,7 +45,8 @@
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  width: 48%;
+  width: 98%; /* 幅を98%に */
+  height: 48%; /* 高さを48%に */
   border-radius: 8px;
   box-sizing: border-box;
   color: #f8f8f2; /* エリア内の文字色 */

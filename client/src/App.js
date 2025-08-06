@@ -133,40 +133,7 @@ const App = () => {
         <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
         <div className={styles.gameArea}> {/* クラス名を使用 */}
-          {/* 相手のエリア */}
-          <div className={styles.opponentArea}> {/* クラス名を使用 */}
-            <h3>Opponent's Area</h3>
-            <p>Opponent's Deck Size: {opponentDeckSize}</p>
-            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
-            <h4>Opponent's Mana Zone:</h4>
-            <div
-              ref={dropMana} // ドロップターゲットとして設定
-              className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
-            >
-              {opponentManaZone.length === 0 ? (
-                <p className={styles.emptyZoneText}>Empty</p>
-              ) : (
-                opponentManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
-                ))
-              )}
-            </div>
-            <h4>Opponent's Played Cards:</h4>
-            <div
-              ref={dropField} // ドロップターゲットとして設定
-              className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
-            >
-              {opponentPlayedCards.length === 0 ? (
-                <p className={styles.emptyZoneText}>No cards played by opponent.</p>
-              ) : (
-                opponentPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 自分のエリア */}
+          {/* 自分のエリアを先に配置 */}
           <div className={styles.yourArea}> {/* クラス名を使用 */}
             <h3>Your Area</h3>
             <Deck onDrawCard={handleDrawCard} />
@@ -203,6 +170,48 @@ const App = () => {
             <button onClick={handleEndTurn} className={styles.endTurnButton}> {/* クラス名を使用 */}
               End Turn
             </button>
+          </div>
+
+          {/* 相手のエリアを後に配置 */}
+          <div style={{ 
+            border: '1px solid red',
+            padding: '0.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            width: '48%',
+            borderRadius: '8px',
+            backgroundColor: '#ffe0e0',
+            boxSizing: 'border-box',
+          }}>
+            <h3>Opponent's Area</h3>
+            <p>Opponent's Deck Size: {opponentDeckSize}</p>
+            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
+            <h4>Opponent's Mana Zone:</h4>
+            <div
+              ref={dropMana} // ドロップターゲットとして設定
+              className={`${styles.manaZone} ${isOverMana ? styles.manaZoneOver : ''}`} // クラス名を使用
+            >
+              {opponentManaZone.length === 0 ? (
+                <p className={styles.emptyZoneText}>Empty</p>
+              ) : (
+                opponentManaZone.map(card => (
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
+                ))
+              )}
+            </div>
+            <h4>Opponent's Played Cards:</h4>
+            <div
+              ref={dropField} // ドロップターゲットとして設定
+              className={`${styles.playedCardsArea} ${isOverField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
+            >
+              {opponentPlayedCards.length === 0 ? (
+                <p className={styles.emptyZoneText}>No cards played by opponent.</p>
+              ) : (
+                opponentPlayedCards.map(card => (
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
