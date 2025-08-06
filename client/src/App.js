@@ -4,7 +4,7 @@ import Card from './components/Card';
 import Deck from './components/Deck';
 import Hand from './components/Hand';
 
-const socket = io('http://localhost:3000');
+const socket = io('https://neocard-server.onrender.com'); // RenderのサーバーURLに更新
 
 const App = () => {
   const [message, setMessage] = useState('Connecting...');
@@ -68,7 +68,7 @@ const App = () => {
   return (
     <div style={{ textAlign: 'center', marginTop: '20px' }}>
       <h1>{message}</h1>
-      <h2>{isYourTurn ? 'Your Turn' : "Opponent's Turn"}</h2>
+      <h2>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', width: '90%', margin: '20px auto', border: '2px solid #ccc', padding: '20px', borderRadius: '10px' }}>
         {/* 相手のエリア */}
