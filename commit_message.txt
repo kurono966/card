@@ -1,1 +1,3 @@
-feat: Update card data with Japanese names and descriptions
+Fix: Add Vercel preview URL to CORS whitelist
+
+Added 'https://neocard-client-24q40927s-kuronos-projects.vercel.app' to the list of allowed origins in the server's CORS configuration to resolve connection issues from the Vercel preview deployment.

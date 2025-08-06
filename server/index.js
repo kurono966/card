@@ -3,10 +3,12 @@ const http = require('http');
 const socketIo = require('socket.io');
 
 const app = express();
+const cors = require('cors');
+app.use(cors());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app", "https://neocard-client-24q40927s-kuronos-projects.vercel.app"], // Allow connections from React dev server and Vercel client
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://neocard-client.vercel.app", "https://neocard-client-24q40927s-kuronos-projects.vercel.app", "https://neocard-client-igeqrwa2k-kuronos-projects.vercel.app"], // Allow connections from React dev server and Vercel client, and the new Vercel client URL
     methods: ["GET", "POST"]
   }
 });
@@ -309,8 +311,14 @@ io.on('connection', (socket) => {
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Card Game Server is running!');
+const path = require('path');
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// All remaining requests return the React app, so it can handle routing.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 server.listen(PORT, () => {
