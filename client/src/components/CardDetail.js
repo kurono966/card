@@ -62,8 +62,11 @@ const CardDetail = ({ card, onClose }) => {
         <div style={{ fontSize: '1em', alignSelf: 'flex-end' }}></div>
       </div>
       <h3 style={{ marginTop: '15px' }}>{card.name}</h3> {/* カード名称を表示 */}
-      <p>Value: {card.value}</p>
       <p>Mana Cost: {card.manaCost}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', marginTop: '10px' }}>
+        <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>⚔️{card.attack}</span>
+        <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>🛡️{card.defense}</span>
+      </div>
       {card.effect && <p style={{ fontWeight: 'bold', color: '#50fa7b' }}>Effect: {card.effect}</p>} {/* 効果があれば太字で表示 */}
       {card.description && <p style={{ fontSize: '0.9em', color: '#bd93f9' }}>{card.description}</p>} {/* 説明があれば薄めの色で表示 */}
     </div>

@@ -215,6 +215,65 @@ io.on('connection', (socket) => {
     emitFullGameState();
   });
 
+  // カードを攻撃するイベント
+  socket.on('attack_card', (attackerCardId, targetId) => {
+    if (!players[socket.id] || !players[socket.id].isTurn || !gameActive) {
+      console.log(`[Server] Player ${socket.id} tried to attack, but it's not their turn or game not active.`);
+      return;
+    }
+
+    const attackerPlayer = players[socket.id];
+    const opponentId = playerOrder.find(id => id !== socket.id);
+    const opponentPlayer = players[opponentId];
+
+    if (!opponentPlayer) {
+      console.log(`[Server] Opponent not found for attack.`);
+      return;
+    }
+
+    const attackerCard = attackerPlayer.played.find(c => c.id === attackerCardId);
+    if (!attackerCard) {
+      console.log(`[Server] Attacker card ${attackerCardId} not found on field.`);
+      return;
+    }
+
+    // 攻撃対象がプレイヤーの場合
+    if (targetId === 'player') {
+      opponentPlayer.life -= attackerCard.attack;
+      console.log(`[Server] Player ${socket.id} attacked opponent directly. Opponent life: ${opponentPlayer.life}`);
+      if (opponentPlayer.life <= 0) {
+        console.log(`[Server] Player ${opponentId} defeated!`);
+        io.to(socket.id).emit('game_over', 'You won!');
+        io.to(opponentId).emit('game_over', 'You lost!');
+        gameActive = false; // ゲーム終了
+      }
+    } else {
+      // 攻撃対象が相手のカードの場合
+      const targetCard = opponentPlayer.played.find(c => c.id === targetId);
+      if (!targetCard) {
+        console.log(`[Server] Target card ${targetId} not found on opponent's field.`);
+        return;
+      }
+
+      // ダメージ計算
+      targetCard.defense -= attackerCard.attack;
+      attackerCard.defense -= targetCard.attack; // 反撃
+
+      console.log(`[Server] Card ${attackerCard.name} attacked ${targetCard.name}. ${targetCard.name} defense: ${targetCard.defense}, ${attackerCard.name} defense: ${attackerCard.defense}`);
+
+      // カードの破壊処理
+      if (targetCard.defense <= 0) {
+        opponentPlayer.played = opponentPlayer.played.filter(c => c.id !== targetId);
+        console.log(`[Server] Card ${targetCard.name} destroyed.`);
+      }
+      if (attackerCard.defense <= 0) {
+        attackerPlayer.played = attackerPlayer.played.filter(c => c.id !== attackerCardId);
+        console.log(`[Server] Card ${attackerCard.name} destroyed.`);
+      }
+    }
+    emitFullGameState();
+  });
+
   // ターン終了イベント
   socket.on('end_turn', () => {
     if (!players[socket.id] || !players[socket.id].isTurn || !gameActive) {

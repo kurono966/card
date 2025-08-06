@@ -24,16 +24,20 @@ const App = () => {
   const [yourManaZone, setYourManaZone] = useState([]);
   const [yourMaxMana, setYourMaxMana] = useState(0);
   const [yourCurrentMana, setYourCurrentMana] = useState(0);
+  const [yourLife, setYourLife] = useState(20); // ライフポイントを追加
 
   const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
   const [opponentManaZone, setOpponentManaZone] = useState([]);
   const [opponentDeckSize, setOpponentDeckSize] = useState(0);
   const [opponentMaxMana, setOpponentMaxMana] = useState(0);
   const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
+  const [opponentLife, setOpponentLife] = useState(20); // 相手のライフポイントを追加
 
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
   const [effectMessage, setEffectMessage] = useState(null); // 効果メッセージ
+  const [isAttacking, setIsAttacking] = useState(false); // 攻撃中かどうか
+  const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -70,6 +74,8 @@ const App = () => {
       setOpponentDeckSize(state.opponentDeckSize);
       setOpponentMaxMana(state.opponentMaxMana);
       setOpponentCurrentMana(state.opponentCurrentMana);
+      setYourLife(state.yourLife);
+      setOpponentLife(state.opponentLife);
 
       setIsYourTurn(state.isYourTurn);
     });
@@ -121,6 +127,26 @@ const App = () => {
     } else if (actionType === 'click') {
       // モバイルでのタップ時、またはデスクトップでのクリック時
       setSelectedCardDetail(card);
+    } else if (actionType === 'attack') {
+      // 攻撃ボタンが押された時
+      if (isYourTurnRef.current) {
+        setIsAttacking(true);
+        setSelectedAttackerCardId(card.id);
+        console.log(`[App.js] Attacker selected: ${card.id}`);
+      } else {
+        alert("It's not your turn!");
+      }
+    }
+  };
+
+  const handleTargetClick = (targetId) => {
+    if (isAttacking && selectedAttackerCardId) {
+      console.log(`[App.js] Attacking with ${selectedAttackerCardId} on ${targetId}`);
+      socket.emit('attack_card', selectedAttackerCardId, targetId);
+      setIsAttacking(false);
+      setSelectedAttackerCardId(null);
+    } else {
+      console.log('[App.js] Not in attacking mode or no attacker selected.');
     }
   };
 
@@ -191,9 +217,10 @@ const App = () => {
         <div className={styles.gameArea}> {/* クラス名を使用 */}
           {/* 相手のエリア */}
           <div className={styles.opponentArea}> {/* クラス名を使用 */}
-            <h3>Opponent\'s Area</h3>
-            <p>Opponent\'s Deck Size: {opponentDeckSize}</p>
-            <p>Opponent\'s Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
+            <h3>Opponent's Area</h3>
+            <p onClick={() => handleTargetClick('player')} style={{ cursor: isAttacking ? 'pointer' : 'default', color: isAttacking ? 'red' : 'inherit' }}>Opponent's Life: {opponentLife}</p>
+            <p>Opponent's Deck Size: {opponentDeckSize}</p>
+            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             
             <div className={styles.opponentFieldManaContainer}> {/* 新しいコンテナ */}
               <h4>Opponent\'s Played Cards:</h4>
@@ -205,7 +232,21 @@ const App = () => {
                   <p className={styles.emptyZoneText}>No cards played by opponent.</p>
                 ) : (
                   opponentPlayedCards.map(card => (
-                    <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} name={card.name} effect={card.effect} description={card.description} attack={card.attack} defense={card.defense} onCardAction={handleCardAction} />
+                    <Card 
+                      key={card.id}
+                      id={card.id}
+                      value={card.value}
+                      manaCost={card.manaCost}
+                      imageUrl={card.imageUrl}
+                      name={card.name}
+                      effect={card.effect}
+                      description={card.description}
+                      attack={card.attack}
+                      defense={card.defense}
+                      onCardAction={handleCardAction}
+                      isAttacking={isAttacking} // 攻撃中かどうかを渡す
+                      onTargetClick={handleTargetClick} // ターゲットクリックハンドラを渡す
+                    />
                   ))
                 )}
               </div>
@@ -231,6 +272,7 @@ const App = () => {
           {/* 自分のエリア */}
           <div className={styles.yourArea}> {/* クラス名を使用 */}
             <h3>Your Area</h3>
+            <p>Your Life: {yourLife}</p>
             {/* 自分のフィールドを上部に設置 */}
             <h4>Your Played Cards:</h4>
             <div

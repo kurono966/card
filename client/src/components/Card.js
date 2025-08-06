@@ -5,8 +5,8 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction, isPlayed, isYourTurn, hasAttackedThisTurn }) => { // effect, description, attack, defense, isPlayed, isYourTurn, hasAttackedThisTurn を追加
-  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}, isPlayed: ${isPlayed}, isYourTurn: ${isYourTurn}, hasAttackedThisTurn: ${hasAttackedThisTurn}`); // デバッグログを追加
+const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick }) => { // effect, description, attack, defense, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick を追加
+  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}, isPlayed: ${isPlayed}, isYourTurn: ${isYourTurn}, hasAttackedThisTurn: ${hasAttackedThisTurn}, isAttacking: ${isAttacking}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense }, // effect, description, attack, defense もドラッグアイテムに含める
@@ -73,7 +73,7 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
+      onClick={isAttacking ? () => onTargetClick(id) : handleClick}
     >
       <div style={{ fontSize: '0.8em', alignSelf: 'flex-start' }}>Cost: {manaCost}</div>
       <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{name}</div>
