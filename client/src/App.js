@@ -47,6 +47,7 @@ const App = () => {
     });
 
     socket.on('game_state', (state) => {
+      console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand);
       setYourDeckSize(state.yourDeckSize);
       setYourPlayedCards(state.yourPlayedCards);
@@ -175,7 +176,7 @@ const App = () => {
                 <p style={{ fontSize: '0.8rem' }}>Empty</p>
               ) : (
                 opponentManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
                 ))
               )}
             </div>
@@ -193,7 +194,7 @@ const App = () => {
                 <p style={{ fontSize: '0.8rem' }}>No cards played by opponent.</p>
               ) : (
                 opponentPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
                 ))
               )}
             </div>
@@ -219,7 +220,7 @@ const App = () => {
               ref={dropMana} // ドロップターゲットとして設定
               style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '4rem', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem', marginBottom: '0.5rem',
-                backgroundColor: isOverMana ? '#e0ffe0' : 'transparent',
+                backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
                 flexShrink: 0, // 縮小しない
               }}
             >
@@ -227,7 +228,7 @@ const App = () => {
                 <p>Empty</p>
               ) : (
                 yourManaZone.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
                 ))
               )}
             </div>
@@ -238,7 +239,7 @@ const App = () => {
               ref={dropField} // ドロップターゲットとして設定
               style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '8rem', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '0.2rem',
-                backgroundColor: isOverField ? '#e0ffe0' : 'transparent',
+                backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
                 flexGrow: 1, // 残りのスペースを埋める
                 overflowY: 'auto', // 必要に応じてスクロール
               }}
@@ -247,7 +248,7 @@ const App = () => {
                 <p>No cards played by you.</p>
               ) : (
                 yourPlayedCards.map(card => (
-                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} /> // imageUrl を追加
+                  <Card key={card.id} value={card.value} manaCost={card.manaCost} imageUrl={card.imageUrl} />
                 ))
               )}
             </div>

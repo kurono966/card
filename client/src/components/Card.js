@@ -6,6 +6,7 @@ const ItemTypes = {
 };
 
 const Card = ({ id, value, manaCost, imageUrl, onClick }) => {
+  console.log(`[Card.js] Card ID: ${id}, Image URL: ${imageUrl}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id, value, manaCost, imageUrl }, // imageUrl もドラッグアイテムに含める
