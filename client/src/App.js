@@ -6,6 +6,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import Card from './components/Card';
 import Deck from './components/Deck';
 import Hand from './components/Hand';
+import CardDetail from './components/CardDetail'; // CardDetailをインポート
 
 import styles from './App.module.css'; // CSS Modulesをインポート
 
@@ -31,6 +32,7 @@ const App = () => {
   const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
 
   const [isYourTurn, setIsYourTurn] = useState(false);
+  const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -73,7 +75,10 @@ const App = () => {
     };
   }, []);
 
-  // handleDrawCard 関数を削除
+  const handleDrawCard = () => {
+    // 自動ドローになったため、この関数は不要
+    console.log('Draw Card button clicked (should not happen).');
+  };
 
   const handlePlayCard = (cardId) => {
     // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
@@ -85,6 +90,24 @@ const App = () => {
       socket.emit('end_turn');
     } else {
       alert("It's not your turn!");
+    }
+  };
+
+  // カード詳細表示のハンドラ
+  const handleCardAction = (card, actionType) => {
+    if (actionType === 'hover') {
+      // デスクトップでのマウスオーバー時
+      if (window.innerWidth > 768) { // 例: 画面幅が768pxより大きい場合のみホバーで表示
+        setSelectedCardDetail(card);
+      }
+    } else if (actionType === 'leave') {
+      // デスクトップでのマウスが離れた時
+      if (window.innerWidth > 768) {
+        setSelectedCardDetail(null);
+      }
+    } else if (actionType === 'click') {
+      // モバイルでのタップ時、またはデスクトップでのクリック時
+      setSelectedCardDetail(card);
     }
   };
 
