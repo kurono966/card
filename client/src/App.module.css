@@ -115,8 +115,11 @@
 }
 
 .manaZone {
-  min-height: 4rem;
+  /* min-height: 4rem; を削除 */
+  max-height: 10vh; /* マナゾーンの最大高さを設定 */
+  overflow-y: auto; /* 必要に応じてスクロール */
   border: 1px dashed #bd93f9; /* 紫系 */
+  align-content: flex-start; /* カードが複数行にわたる場合に上から詰める */
 }
 
 .playedCardsArea {
