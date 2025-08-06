@@ -125,22 +125,49 @@ const App = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <h1>{message}</h1>
-        <h2>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+      <div style={{ 
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh', // 画面の高さに合わせる
+        overflow: 'hidden', // スクロールを禁止
+      }}>
+        <h1 style={{ margin: '10px 0' }}>{message}</h1>
+        <h2 style={{ margin: '5px 0' }}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
 
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', width: '90%', margin: '20px auto', border: '2px solid #ccc', padding: '20px', borderRadius: '10px' }}>
+        <div style={{ 
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'stretch', // 高さを揃える
+          flexGrow: 1, // 残りのスペースを埋める
+          width: '98vw', // 画面幅の98%を使用
+          margin: '0 auto',
+          border: '2px solid #ccc',
+          padding: '10px',
+          borderRadius: '10px',
+          boxSizing: 'border-box',
+        }}>
           {/* 相手のエリア */}
-          <div style={{ border: '1px solid red', padding: '10px', minHeight: '250px', width: '45%', borderRadius: '8px', backgroundColor: '#ffe0e0' }}>
+          <div style={{ 
+            border: '1px solid red',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            width: '48%',
+            borderRadius: '8px',
+            backgroundColor: '#ffe0e0',
+            boxSizing: 'border-box',
+          }}>
             <h3>Opponent's Area</h3>
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             <h4>Opponent's Mana Zone:</h4>
             <div
               ref={dropMana} // ドロップターゲットとして設定
-              style={{
+              style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '60px', border: isOverMana ? '2px dashed blue' : '1px dashed #f00', padding: '5px', marginBottom: '10px',
                 backgroundColor: isOverMana ? '#e0e0ff' : 'transparent',
+                flexShrink: 0, // 縮小しない
               }}
             >
               {opponentManaZone.length === 0 ? (
@@ -154,9 +181,11 @@ const App = () => {
             <h4>Opponent's Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
-              style={{
+              style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '130px', border: isOverField ? '2px dashed blue' : '1px dashed #f00', padding: '5px',
                 backgroundColor: isOverField ? '#e0e0ff' : 'transparent',
+                flexGrow: 1, // 残りのスペースを埋める
+                overflowY: 'auto', // 必要に応じてスクロール
               }}
             >
               {opponentPlayedCards.length === 0 ? (
@@ -170,7 +199,16 @@ const App = () => {
           </div>
 
           {/* 自分のエリア */}
-          <div style={{ border: '1px solid green', padding: '10px', minHeight: '250px', width: '45%', borderRadius: '8px', backgroundColor: '#e0ffe0' }}>
+          <div style={{ 
+            border: '1px solid green',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            width: '48%',
+            borderRadius: '8px',
+            backgroundColor: '#e0ffe0',
+            boxSizing: 'border-box',
+          }}>
             <h3>Your Area</h3>
             <Deck onDrawCard={handleDrawCard} />
             <p>Your Deck Size: {yourDeckSize}</p>
@@ -178,9 +216,10 @@ const App = () => {
             <h4>Your Mana Zone:</h4>
             <div
               ref={dropMana} // ドロップターゲットとして設定
-              style={{
+              style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '60px', border: isOverMana ? '2px dashed blue' : '1px dashed #0f0', padding: '5px', marginBottom: '10px',
                 backgroundColor: isOverMana ? '#e0ffe0' : 'transparent',
+                flexShrink: 0, // 縮小しない
               }}
             >
               {yourManaZone.length === 0 ? (
@@ -196,9 +235,11 @@ const App = () => {
             <h4>Your Played Cards:</h4>
             <div
               ref={dropField} // ドロップターゲットとして設定
-              style={{
+              style={{ 
                 display: 'flex', flexWrap: 'wrap', justifyContent: 'center', minHeight: '130px', border: isOverField ? '2px dashed blue' : '1px dashed #0f0', padding: '5px',
                 backgroundColor: isOverField ? '#e0ffe0' : 'transparent',
+                flexGrow: 1, // 残りのスペースを埋める
+                overflowY: 'auto', // 必要に応じてスクロール
               }}
             >
               {yourPlayedCards.length === 0 ? (

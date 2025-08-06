@@ -19,19 +19,20 @@ const Card = ({ id, value, manaCost, onClick }) => {
       ref={drag}
       style={{
         opacity: isDragging ? 0.5 : 1,
-        width: '80px',
-        height: '120px',
+        width: '70px', // カードの幅を調整
+        height: '100px', // カードの高さを調整
         border: '1px solid black',
         borderRadius: '5px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'center',
-        margin: '5px',
+        margin: '3px', // マージンを調整
         backgroundColor: '#f0f0f0',
         cursor: onClick ? 'pointer' : 'default',
-        padding: '5px',
+        padding: '3px',
         boxSizing: 'border-box',
+        fontSize: '0.8em', // フォントサイズを調整
       }}
       onClick={onClick}
     >
