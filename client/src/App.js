@@ -17,7 +17,7 @@ const ItemTypes = {
 };
 
 const App = () => {
-  const [message, setMessage] = useState('Connecting...');
+  const [message, setMessage] = useState('Loading game...'); // 初期メッセージを変更
   const [yourHand, setYourHand] = useState([]);
   const [yourDeckSize, setYourDeckSize] = useState(0);
   const [yourPlayedCards, setYourPlayedCards] = useState([]);
@@ -51,14 +51,19 @@ const App = () => {
       setMessage('Disconnected from server.');
     });
 
+    socket.on('connect_error', (error) => { // 接続エラーハンドリングを追加
+      console.error('Socket connection error:', error);
+      setMessage(`Connection error: ${error.message}. Retrying...`);
+    });
+
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand);
       setYourDeckSize(state.deckSize);
-      setYourPlayedCards(state.yourPlayedCards);
-      setYourManaZone(state.manaZone); // 修正
-      setYourMaxMana(state.maxMana); // 修正
-      setYourCurrentMana(state.currentMana); // 修正
+      setYourPlayedCards(state.played);
+      setYourManaZone(state.manaZone);
+      setYourMaxMana(state.maxMana);
+      setYourCurrentMana(state.currentMana);
 
       setOpponentPlayedCards(state.opponentPlayedCards);
       setOpponentManaZone(state.opponentManaZone);
@@ -69,9 +74,15 @@ const App = () => {
       setIsYourTurn(state.isYourTurn);
     });
 
+    socket.on('effect_triggered', (message) => {
+      setEffectMessage(message);
+      setTimeout(() => setEffectMessage(null), 3000); // 3秒後にメッセージを消す
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
+      socket.off('connect_error'); // クリーンアップを追加
       socket.off('game_state');
       socket.off('effect_triggered');
     };
