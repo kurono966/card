@@ -69,8 +69,11 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
       onClick={handleClick}
     >
       <div style={{ fontSize: '0.8em', alignSelf: 'flex-start' }}>Cost: {manaCost}</div>
-      <div style={{ fontSize: '1.5em', fontWeight: 'bold' }}>{value}</div>
-      <div style={{ fontSize: '0.8em', alignSelf: 'flex-end' }}></div> {/* Placeholder for future info */}
+      <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{name}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 5px', boxSizing: 'border-box' }}>
+        <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>⚔️{attack}</span>
+        <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>🛡️{defense}</span>
+      </div>
     </div>
   );
 };
