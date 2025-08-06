@@ -24,12 +24,14 @@ const App = () => {
   const [yourManaZone, setYourManaZone] = useState([]);
   const [yourMaxMana, setYourMaxMana] = useState(0);
   const [yourCurrentMana, setYourCurrentMana] = useState(0);
+  const [yourLife, setYourLife] = useState(20); // 自分のライフ
 
   const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
   const [opponentManaZone, setOpponentManaZone] = useState([]);
   const [opponentDeckSize, setOpponentDeckSize] = useState(0);
   const [opponentMaxMana, setOpponentMaxMana] = useState(0);
   const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
+  const [opponentLife, setOpponentLife] = useState(20); // 相手のライフ
 
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
@@ -70,6 +72,8 @@ const App = () => {
       setOpponentDeckSize(state.opponentDeckSize);
       setOpponentMaxMana(state.opponentMaxMana);
       setOpponentCurrentMana(state.opponentCurrentMana);
+      setYourLife(state.yourLife); // 自分のライフを更新
+      setOpponentLife(state.opponentLife); // 相手のライフを更新
 
       setIsYourTurn(state.isYourTurn);
     });
@@ -80,6 +84,7 @@ const App = () => {
       socket.off('connect_error'); // クリーンアップを追加
       socket.off('game_state');
       socket.off('effect_triggered');
+      socket.off('game_over'); // game_over イベントのクリーンアップを追加
     };
   }, []);
 
@@ -189,6 +194,7 @@ const App = () => {
             <h3>Opponent\'s Area</h3>
             <p>Opponent\'s Deck Size: {opponentDeckSize}</p>
             <p>Opponent\'s Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
+            <p>Opponent\'s Life: {opponentLife}</p> {/* 相手のライフ表示を追加 */}
             
             <div className={styles.opponentFieldManaContainer}> {/* 新しいコンテナ */}
               <h4>Opponent\'s Played Cards:</h4>
@@ -226,6 +232,7 @@ const App = () => {
           {/* 自分のエリア */}
           <div className={styles.yourArea}> {/* クラス名を使用 */}
             <h3>Your Area</h3>
+            <p>Your Life: {yourLife}</p> {/* 自分のライフ表示を追加 */}
             {/* 自分のフィールドを上部に設置 */}
             <h4>Your Played Cards:</h4>
             <div
