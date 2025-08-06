@@ -5,11 +5,11 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
-  console.log(`[Card.js] Card ID: ${id}, Image URL: ${imageUrl}`); // デバッグログを追加
+const Card = ({ id, name, value, manaCost, imageUrl, onCardAction }) => { // name を追加
+  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Image URL: ${imageUrl}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { id, value, manaCost, imageUrl }, // imageUrl もドラッグアイテムに含める
+    item: { id, name, value, manaCost, imageUrl }, // name もドラッグアイテムに含める
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
@@ -18,7 +18,7 @@ const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
   const handleMouseEnter = () => {
     if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
-      onCardAction({ id, value, manaCost, imageUrl }, 'hover');
+      onCardAction({ id, name, value, manaCost, imageUrl }, 'hover'); // name を渡す
     }
   };
 
@@ -32,7 +32,7 @@ const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
   const handleClick = () => {
     if (isDragging) return; // ドラッグ中はポップアップを表示しない
     if (onCardAction) {
-      onCardAction({ id, value, manaCost, imageUrl }, 'click');
+      onCardAction({ id, name, value, manaCost, imageUrl }, 'click'); // name を渡す
     }
   };
 
@@ -55,7 +55,7 @@ const Card = ({ id, value, manaCost, imageUrl, onCardAction }) => {
         backgroundColor: imageUrl ? 'transparent' : '#6272a4', // 画像がある場合は透明、ない場合はゾーンの色に
         cursor: 'grab', // ドラッグ可能であることを示すカーソル
         padding: '2px',
-        boxSizing: 'border-sizing',
+        boxSizing: 'border-box',
         fontSize: '0.7vw', // フォントサイズをビューポート幅の0.7%に
         backgroundImage: imageUrl ? `url(${imageUrl})` : 'none', // 背景画像を追加
         backgroundSize: 'cover', // 画像をカード全体にフィットさせる
