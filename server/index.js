@@ -14,9 +14,13 @@ const io = socketIo(server, {
         "http://localhost:3000",
         "http://localhost:3001",
         "https://neocard-client.vercel.app",
+        "https://cardclient.netlify.app",
+        "https://*.netlify.app"
       ];
-      // VercelのプレビューデプロイメントURL（例: https://neocard-client-*.vercel.app）を許可する
-      if (!origin || allowedOrigins.includes(origin) || /https:\/\/neocard-client-.*\.vercel\.app/.test(origin)) {
+      // VercelのプレビューデプロイメントURL（例: https://neocard-client-*.vercel.app）とNetlifyを許可する
+      if (!origin || allowedOrigins.includes(origin) || 
+          /https:\/\/neocard-client-.*\.vercel\.app/.test(origin) ||
+          /https:\/\/.*\.netlify\.app/.test(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
