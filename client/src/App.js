@@ -298,6 +298,7 @@ const App = () => {
                     isPlayed={true} // フィールド上のカードなのでtrue
                     isYourTurn={isYourTurn} // 自分のターンかどうかを渡す
                     hasAttackedThisTurn={card.hasAttackedThisTurn} // 攻撃済みフラグを渡す
+                    isTapped={card.isTapped} // タップ状態を渡す
                   />
                 ))
               )}

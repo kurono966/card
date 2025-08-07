@@ -5,8 +5,8 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick }) => { // effect, description, attack, defense, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick を追加
-  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}, isPlayed: ${isPlayed}, isYourTurn: ${isYourTurn}, hasAttackedThisTurn: ${hasAttackedThisTurn}, isAttacking: ${isAttacking}`); // デバッグログを追加
+const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack, defense, onCardAction, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick, isTapped }) => { // effect, description, attack, defense, isPlayed, isYourTurn, hasAttackedThisTurn, isAttacking, onTargetClick, isTapped を追加
+  console.log(`[Card.js] Card ID: ${id}, Name: ${name}, Attack: ${attack}, Defense: ${defense}, Image URL: ${imageUrl}, isPlayed: ${isPlayed}, isYourTurn: ${isYourTurn}, hasAttackedThisTurn: ${hasAttackedThisTurn}, isAttacking: ${isAttacking}, isTapped: ${isTapped}`); // デバッグログを追加
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense }, // effect, description, attack, defense もドラッグアイテムに含める
@@ -48,10 +48,10 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
       ref={drag}
       style={{
         opacity: isDragging ? 0.5 : 1,
-        width: '5vw', // カードの幅をビューポート幅の5%に
-        height: '7.5vw', // カードの高さをビューポート幅の7.5%に (アスペクト比1:1.5)
-        minWidth: '40px', // 最小幅
-        minHeight: '60px', // 最小高さ
+        width: isTapped ? '7.5vw' : '5vw', // タップ状態なら幅と高さを入れ替え
+        height: isTapped ? '5vw' : '7.5vw', // タップ状態なら幅と高さを入れ替え
+        minWidth: isTapped ? '60px' : '40px', // 最小幅
+        minHeight: isTapped ? '40px' : '60px', // 最小高さ
         border: '1px solid #f8f8f2', // ボーダー色を白系に
         borderRadius: '5px',
         display: 'flex',

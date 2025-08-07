@@ -1,1 +1,1 @@
-feat: Integrate cardData.js for dynamic deck building and remove unused code.
+feat: Implement attack phase, fix card popup, and display life points.

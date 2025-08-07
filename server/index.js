@@ -30,7 +30,7 @@ function initializePlayerState(socketId) {
   for (let i = 0; i < deckSize; i++) {
     // allCardsからランダムにカードを選択し、新しいIDを付与してデッキに追加
     const randomIndex = Math.floor(Math.random() * allCards.length);
-    const card = { ...allCards[randomIndex], id: `${allCards[randomIndex].id}_${socketId}_${i}` };
+    const card = { ...allCards[randomIndex], id: `${allCards[randomIndex].id}_${socketId}_${i}`, isTapped: false };
     deck.push(card);
   }
 
@@ -237,6 +237,14 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (attackerCard.isTapped) {
+      console.log(`[Server] Attacker card ${attackerCardId} is tapped and cannot attack.`);
+      return;
+    }
+
+    // 攻撃後にカードをタップ状態にする
+    attackerCard.isTapped = true;
+
     // 攻撃対象がプレイヤーの場合
     if (targetId === 'player') {
       opponentPlayer.life -= attackerCard.attack;
@@ -282,6 +290,12 @@ io.on('connection', (socket) => {
     }
 
     players[socket.id].isTurn = false; // 現在のプレイヤーのターンを終了
+
+    // ターン終了時に自分のフィールドのカードをすべてアンタップする
+    players[socket.id].played.forEach(card => {
+      card.isTapped = false;
+    });
+
     currentPlayerIndex = (currentPlayerIndex + 1) % playerOrder.length; // 次のプレイヤーへ
     const nextPlayerId = playerOrder[currentPlayerIndex];
 
