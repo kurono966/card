@@ -170,6 +170,145 @@ function emitFullGameState() {
   console.log('-------------------------------');
 }
 
+// ゲームオーバーチェック
+function checkGameOver(loserId, winnerSocketId) {
+  if (players[loserId].life <= 0) {
+    io.emit('game_over', { winner: winnerSocketId, loser: loserId });
+    gameActive = false;
+    return true;
+  }
+  return false;
+}
+
+// 戦闘ダメージを解決する
+function resolveCombatDamage() {
+  const attackerPlayer = players[playerOrder[currentPlayerIndex]];
+  const opponentId = playerOrder.find(id => id !== playerOrder[currentPlayerIndex]);
+  const opponentPlayer = players[opponentId];
+
+  // グレイブヤードを初期化（存在しない場合）
+  if (!attackerPlayer.graveyard) attackerPlayer.graveyard = [];
+  if (!opponentPlayer.graveyard) opponentPlayer.graveyard = [];
+  
+  // ファーストストライクフェイズ
+  const firstStrikeAttackers = attackingCreatures.filter(attackInfo => {
+    const card = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+    return card && card.abilities && card.abilities.includes('firstStrike');
+  });
+
+  // 通常の攻撃クリーチャー（ファーストストライクを持たないもの）
+  const normalAttackers = attackingCreatures.filter(attackInfo => 
+    !firstStrikeAttackers.includes(attackInfo)
+  );
+
+  // ダメージを解決するヘルパー関数
+  const resolveDamage = (attackers) => {
+    attackers.forEach(attackInfo => {
+      const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+      if (!attackerCard) return; // クリーチャーがすでに破壊されている場合
+
+      const blockers = blockingAssignments[attackInfo.attackerId] || [];
+      const hasFlying = attackerCard.abilities && attackerCard.abilities.includes('flying');
+      const hasTrample = attackerCard.abilities && attackerCard.abilities.includes('trample');
+      const hasFirstStrike = attackerCard.abilities && attackerCard.abilities.includes('firstStrike');
+      const hasDeathtouch = attackerCard.abilities && attackerCard.abilities.includes('deathtouch');
+    
+      // 飛行持ちで、ブロッカーがいないか、飛行/到達を持たない場合、プレイヤーに直接ダメージ
+      if (hasFlying && blockers.length === 0) {
+        // ブロックされていない飛行クリーチャーはプレイヤーに直接ダメージ
+        opponentPlayer.life -= attackerCard.attack;
+        console.log(`[Server] Flying creature ${attackerCard.id} deals ${attackerCard.attack} damage to player ${opponentId}. Life: ${opponentPlayer.life}`);
+        checkGameOver(opponentId, attackerPlayer.socketId);
+        return;
+      }
+
+      if (blockers.length > 0) {
+        let remainingDamage = attackerCard.attack;
+        let totalBlockingToughness = blockers.reduce((sum, blockerId) => {
+          const blocker = opponentPlayer.played.find(c => c.id === blockerId);
+          return sum + (blocker ? blocker.defense : 0);
+        }, 0);
+
+        // 各ブロッカーにダメージを割り振る
+        for (let i = 0; i < blockers.length && remainingDamage > 0; i++) {
+          const blockerId = blockers[i];
+          const blockerCard = opponentPlayer.played.find(c => c.id === blockerId);
+          if (!blockerCard) continue;
+
+          // ブロッカーにダメージを与える
+          const damageToBlocker = hasDeathtouch ? blockerCard.defense : Math.min(remainingDamage, blockerCard.defense);
+          blockerCard.defense -= damageToBlocker;
+          remainingDamage -= damageToBlocker;
+          console.log(`[Server] Attacker ${attackerCard.id} deals ${damageToBlocker} damage to blocker ${blockerId}`);
+
+          // ブロッカーから攻撃者へのダメージ（反撃）
+          if (blockerCard.defense > 0 || (blockerCard.abilities && blockerCard.abilities.includes('deathtouch'))) {
+            if (attackerCard.defense > 0) {
+              const damageToAttacker = blockerCard.attack;
+              attackerCard.defense -= damageToAttacker;
+              console.log(`[Server] Blocker ${blockerId} deals ${damageToAttacker} damage to attacker ${attackerCard.id}`);
+            }
+          }
+        }
+
+        // トランプル処理（残りダメージをプレイヤーに与える）
+        if (hasTrample && remainingDamage > 0) {
+          opponentPlayer.life -= remainingDamage;
+          console.log(`[Server] Trample deals ${remainingDamage} damage to player ${opponentId}. Life: ${opponentPlayer.life}`);
+          checkGameOver(opponentId, attackerPlayer.socketId);
+        }
+      } else {
+        // ブロックされていない場合、プレイヤーに直接ダメージ
+        opponentPlayer.life -= attackerCard.attack;
+        console.log(`[Server] Player ${opponentId} took ${attackerCard.attack} damage. Life: ${opponentPlayer.life}`);
+        checkGameOver(opponentId, attackerPlayer.socketId);
+      }
+
+      // ダメージマーカーをリセット（ターン終了時にクリアされる）
+      if (attackerCard) {
+        attackerCard.damageThisTurn = (attackerCard.damageThisTurn || 0) + attackerCard.attack;
+      }
+    });
+
+    // 破壊されたクリーチャーを墓地に送る
+    [attackerPlayer, opponentPlayer].forEach(player => {
+      const destroyed = player.played.filter(card => card.defense <= 0);
+      player.played = player.played.filter(card => card.defense > 0);
+      player.graveyard = [...(player.graveyard || []), ...destroyed];
+      
+      // 破壊トリガーを処理
+      destroyed.forEach(card => {
+        console.log(`[Server] Card ${card.id} was destroyed and sent to graveyard`);
+        // ここで死亡時効果を処理
+      });
+    });
+  };
+
+  // ファーストストライクフェイズの処理
+  if (firstStrikeAttackers.length > 0) {
+    console.log('[Server] Resolving first strike damage phase');
+    resolveDamage(firstStrikeAttackers);
+    
+    // 生存している攻撃クリーチャーとブロッカーのみを残して通常ダメージフェイズに進む
+    const remainingAttackers = normalAttackers.filter(attackInfo => {
+      const card = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+      return card && card.defense > 0;
+    });
+    
+    // 通常ダメージフェイズ
+    if (remainingAttackers.length > 0) {
+      console.log('[Server] Resolving normal damage phase');
+      resolveDamage(remainingAttackers);
+    }
+  } else {
+    // ファーストストライクがいない場合は通常通り1回だけダメージ解決
+    resolveDamage(attackingCreatures);
+  }
+
+  // 戦闘終了後、攻撃クリーチャーとブロッククリーチャーのリストをクリア
+  attackingCreatures = [];
+}
+
 // --- Socket.IO イベントハンドリング --- //
 io.on('connection', (socket) => {
   console.log('[Server] A user connected:', socket.id);
@@ -342,7 +481,6 @@ io.on('connection', (socket) => {
   });
 
   // 攻撃クリーチャー宣言イベント
-  // 攻撃クリーチャー宣言イベント
   socket.on('declare_attackers', (attackers) => {
     // 攻撃宣言は現在のターンプレイヤーのみ可能
     if (!players[socket.id] || !players[socket.id].isTurn || !gameActive || currentPhase !== GAME_PHASES.DECLARE_ATTACKERS) {
@@ -460,102 +598,12 @@ io.on('connection', (socket) => {
         card.blocking = false;
       });
     });
-    
-    emitFullGameState();
   });
 
-  function resolveCombatDamage() {
-    const attackerPlayer = players[playerOrder[currentPlayerIndex]];
-    const opponentId = playerOrder.find(id => id !== playerOrder[currentPlayerIndex]);
-    const opponentPlayer = players[opponentId];
-
-    // 攻撃クリーチャーごとにダメージを解決
-    attackingCreatures.forEach(attackInfo => {
-      const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
-      if (!attackerCard) return; // クリーチャーがすでに破壊されている場合
-
-      const blockers = blockingAssignments[attackInfo.attackerId] || [];
-
-      if (blockers.length > 0) {
-        // ブロックされた場合
-        let totalBlockerDefense = 0;
-        blockers.forEach(blockerId => {
-          const blockerCard = opponentPlayer.played.find(c => c.id === blockerId);
-          if (blockerCard) {
-            // 攻撃クリーチャーからブロッカーへのダメージ
-            blockerCard.defense -= attackerCard.attack;
-            // ブロッカーから攻撃クリーチャーへのダメージ
-            attackerCard.defense -= blockerCard.attack;
-            totalBlockerDefense += blockerCard.defense; // ブロッカーの防御力を合計
-          }
-        });
-
-        // ブロッカーの破壊処理
-        opponentPlayer.played = opponentPlayer.played.filter(c => c.defense > 0);
-        // 攻撃クリーチャーの破壊処理
-        attackerPlayer.played = attackerPlayer.played.filter(c => c.defense > 0);
-
-      } else {
-        // ブロックされていない場合、プレイヤーに直接ダメージ
-        opponentPlayer.life -= attackerCard.attack;
-        console.log(`[Server] Player ${opponentId} took ${attackerCard.attack} damage. Life: ${opponentPlayer.life}`);
-        if (opponentPlayer.life <= 0) {
-          console.log(`[Server] Player ${opponentId} defeated!`);
-          io.to(attackerPlayer.socketId).emit('game_over', 'You won!');
-          io.to(opponentId).emit('game_over', 'You lost!');
-          gameActive = false; // ゲーム終了
-        }
-      }
-    });
-
-    // 戦闘終了後、攻撃クリーチャーとブロッククリーチャーのリストをクリア
-    attackingCreatures = [];
-    blockingAssignments = {};
-  }
-
-  function endCurrentTurnAndStartNext() {
-    const currentSocketId = playerOrder[currentPlayerIndex];
-    players[currentSocketId].isTurn = false; // 現在のプレイヤーのターンを終了
-
-    // ターン終了時に自分のフィールドのカードをすべてアンタップする
-    players[currentSocketId].played.forEach(card => {
-      card.isTapped = false;
-    });
-
-    currentPlayerIndex = (currentPlayerIndex + 1) % playerOrder.length; // 次のプレイヤーへ
-    const nextPlayerId = playerOrder[currentPlayerIndex];
-
-    // 次のプレイヤーが存在することを確認
-    if (players[nextPlayerId]) {
-        players[nextPlayerId].isTurn = true; // 次のプレイヤーのターンを開始
-        players[nextPlayerId].currentMana = players[nextPlayerId].maxMana; // 次のプレイヤーのマナを回復
-        players[nextPlayerId].manaPlayedThisTurn = false; // 次のターンのマナプレイフラグをリセット
-        players[nextPlayerId].drawnThisTurn = false; // 次のターンのドローフラグをリセット
-
-        // ターン開始時の自動ドロー
-        if (players[nextPlayerId].deck.length > 0) {
-          const card = players[nextPlayerId].deck.shift();
-          players[nextPlayerId].hand.push(card);
-          console.log(`[Server] Player ${nextPlayerId} automatically drew card: ${card.value}. Deck size: ${players[nextPlayerId].deck.length}`);
-        } else {
-          console.log(`[Server] Player ${nextPlayerId} could not draw, deck is empty.`);
-        }
-
-        console.log(`[Server] Turn ended for ${currentSocketId}. Next turn for ${nextPlayerId}`);
-        currentPhase = GAME_PHASES.MAIN_PHASE_1; // 新しいターンの開始フェーズを設定
-    } else {
-        console.log(`[Server] Error: Next player ${nextPlayerId} not found after turn end. Resetting game.`);
-        // 次のプレイヤーが見つからない場合はゲームをリセット
-        gameActive = false;
-        playerOrder = [];
-        players = {};
-        currentPlayerIndex = 0;
-        currentPhase = GAME_PHASES.MAIN_PHASE_1; // フェーズもリセット
-    }
-  }
-}
-);
+  // Other socket event handlers...
+  
+}); // End of Socket.IO connection handler
 
 server.listen(PORT, () => {
-  console.log(`[Server] Server is running on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`)
 });
