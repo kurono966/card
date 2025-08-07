@@ -10,19 +10,46 @@ const cors = require('cors');
 app.use(cors());
 const server = http.createServer(app);
 
-// In server/index.js, replace the production block with:
-
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '../client/build');
   console.log('Build path:', buildPath);
   
-  // Serve static files from the build directory
-  app.use(express.static(buildPath));
-  
-  // Serve index.html for all other routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
+  // Check if build directory exists
+  if (!fs.existsSync(buildPath)) {
+    console.error('Build directory not found at:', buildPath);
+  } else {
+    console.log('Build directory exists, serving static files...');
+    
+    // Serve static files from the build directory
+    app.use(express.static(buildPath, {
+      maxAge: '1y',
+      setHeaders: (res, path) => {
+        // Set cache control for static assets
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'public, max-age=0');
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    }));
+    
+    // Handle any other routes by serving the React app
+    app.get('*', (req, res, next) => {
+      const indexPath = path.join(buildPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        next(new Error('index.html not found'));
+      }
+    });
+    
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error('Error serving static files:', err);
+      res.status(500).send('Error serving the application');
+    });
+  }
 }
 
 const io = socketIo(server, {
