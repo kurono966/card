@@ -39,7 +39,7 @@ const App = () => { // Added comment to force re-compilation
   const [currentPhase, setCurrentPhase] = useState('main_phase_1'); // 現在のゲームフェーズ
   const [attackingCreatures, setAttackingCreatures] = useState([]); // 攻撃クリーチャーのリスト
   const [blockingAssignments, setBlockingAssignments] = useState({}); // ブロックの割り当て
-  const [, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
+  const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
   const [selectedBlockerCardId, setSelectedBlockerCardId] = useState(null); // 選択されたブロッカーカードのID
 
   // isYourTurn の最新の値を useRef で保持
@@ -130,6 +130,8 @@ const App = () => { // Added comment to force re-compilation
     } else if (actionType === 'click') {
       // モバイルでのタップ時、またはデスクトップでのクリック時
       setSelectedCardDetail(card);
+      // カードがクリックされたら選択状態を更新
+      setSelectedAttackerCardId(card.id);
     } else if (actionType === 'attack') {
       // 攻撃ボタンが押された時
       if (isYourTurnRef.current && currentPhase === 'declare_attackers') {
@@ -442,6 +444,21 @@ const App = () => { // Added comment to force re-compilation
           fontWeight: 'bold',
         }}>
           {effectMessage}
+        </div>
+      )}
+      {selectedAttackerCardId && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '10px 20px',
+          borderRadius: '5px',
+          zIndex: 1000,
+          fontSize: '1rem',
+        }}>
+          選択中のカードID: {selectedAttackerCardId}
         </div>
       )}
     </DndProvider>
