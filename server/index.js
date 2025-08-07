@@ -17,8 +17,8 @@ const allowedOrigins = [
   'https://neocard-client.vercel.app',
   'https://cardclient.netlify.app',
   'https://neocard-server.onrender.com',  // Add the server's own URL
-  /https:\/\/neocard-client-.*\.vercel\.app/,
-  /https:\/\/.*\.netlify\.app/
+  /^https:\/\/neocard-client-.*\.vercel\.app$/,
+  /^https:\/\/[^\s]+\.netlify\.app$/
 ];
 
 // 本番環境ではセキュアな設定、開発環境では緩和した設定
