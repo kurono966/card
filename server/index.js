@@ -1,12 +1,30 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const path = require('path');
+const fs = require('fs');
 const allCards = require('./cardData'); // cardData.jsをインポート
 
 const app = express();
 const cors = require('cors');
 app.use(cors());
 const server = http.createServer(app);
+
+// In server/index.js, replace the production block with:
+
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '../client/build');
+  console.log('Build path:', buildPath);
+  
+  // Serve static files from the build directory
+  app.use(express.static(buildPath));
+  
+  // Serve index.html for all other routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
+
 const io = socketIo(server, {
   cors: {
     origin: (origin, callback) => {
@@ -26,7 +44,7 @@ const io = socketIo(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;  // Changed from 3000 to 3001
 
 // Define game phases
 const GAME_PHASES = {
