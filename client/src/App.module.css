@@ -1,0 +1,183 @@
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* 画面の高さに合わせる */
+  /* overflow: hidden; を削除 */
+  font-size: 0.9rem; /* 全体のフォントサイズを少し小さく */
+  text-align: center;
+  background-color: #1a1a2e; /* global.css と同じ色 */
+  color: #e0e0e0; /* global.css と同じ色 */
+  padding: 0.5vh 0; /* 上下のパディングをビューポートの高さに合わせる */
+}
+
+.messageHeader {
+  margin: 0.2vh 0;
+  font-size: 1.2rem;
+  color: #8be9fd; /* 明るい水色 */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
+}
+
+.turnHeader {
+  margin: 0.1vh 0;
+  font-size: 1rem;
+  color: #f1fa8c; /* 明るい黄色 */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 影を追加 */
+}
+
+.gameArea {
+  display: flex;
+  flex-direction: column; /* 子要素を縦に並べる */
+  justify-content: space-between; /* 上下のエリア間にスペースを確保 */
+  align-items: stretch; /* 子要素が親の幅いっぱいに広がるように */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  width: 98vw; /* 画面幅の98%を使用 */
+  margin: 0 auto;
+  border: 2px solid #44475a; /* ボーダー色を調整 */
+  padding: 0.5rem; /* パディングを維持 */
+  border-radius: 10px;
+  box-sizing: border-box;
+  background-color: #282a36; /* ゲームエリアの背景色 */
+  box-shadow: 0 0 15px rgba(0,0,0,0.5); /* 全体に影を追加 */
+}
+
+.opponentArea,
+.yourArea {
+  border: 1px solid;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%; /* 幅を100%に */
+  flex-grow: 1; /* 高さを柔軟に */
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: #f8f8f2; /* エリア内の文字色 */
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3); /* 内側に影を追加 */
+  min-height: 45%; /* 最小高さを設定 */
+}
+
+.opponentArea {
+  border-color: #ff5555; /* 赤系 */
+  background-color: #3a3c4a; /* 濃いグレー */
+}
+
+.yourArea {
+  border-color: #50fa7b; /* 緑系 */
+  background-color: #3a3c4a; /* 濃いグレー */
+}
+
+/* 自分のエリア内のレイアウト調整 */
+.yourArea h3, .yourArea p, .yourArea h4 {
+  margin-bottom: 0.2rem; /* 各見出しと段落の下マージンを調整 */
+}
+
+.manaHandContainer {
+  display: flex;
+  flex-direction: row; /* マナゾーンと手札を横に並べる */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  justify-content: flex-start; /* 左寄せ */
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
+
+.manaZoneContainer {
+  display: flex;
+  flex-direction: column;
+  width: 20%; /* マナゾーンの幅 */
+  min-width: 80px; /* 最小幅 */
+  align-items: center;
+  margin-right: 0.5rem; /* 手札との間にスペース */
+}
+
+.handContainer {
+  flex-grow: 1; /* 手札が残りのスペースを埋める */
+  width: 75%; /* 手札の幅 */
+}
+
+.deckEndTurnContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+  gap: 1rem; /* 要素間のスペース */
+}
+
+.manaZone,
+.playedCardsArea {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0.2rem;
+  margin-bottom: 0.5rem;
+  border-radius: 5px;
+  box-sizing: border-box;
+  background-color: #44475a; /* ゾーンの背景色 */
+  flex-shrink: 0; /* 縮小しない */
+}
+
+.manaZone {
+  /* min-height: 4rem; を削除 */
+  max-height: 10vh; /* マナゾーンの最大高さを設定 */
+  overflow-y: auto; /* 必要に応じてスクロール */
+  border: 1px dashed #bd93f9; /* 紫系 */
+  align-content: flex-start; /* カードが複数行にわたる場合に上から詰める */
+}
+
+.playedCardsArea {
+  min-height: 8rem;
+  border: 1px dashed #ff79c6; /* ピンク系 */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  overflow-y: auto; /* 必要に応じてスクロール */
+}
+
+.manaZoneOver,
+.playedCardsAreaOver {
+  border-color: #8be9fd !important; /* 明るい水色 */
+  background-color: #55586b !important; /* ゾーンの背景色より少し明るく */
+}
+
+.emptyZoneText {
+  font-size: 0.8rem;
+  color: #f8f8f2; /* エリア内の文字色と同じ */
+}
+
+.endTurnButton {
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  background-color: #bd93f9; /* 紫系 */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  align-self: center; /* 中央揃え */
+  transition: background-color 0.3s ease; /* ホバーエフェクト */
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5); /* ボタンに影を追加 */
+}
+
+.endTurnButton:hover {
+  background-color: #ff79c6; /* ホバーでピンク系 */
+}
+
+/* 相手のマナゾーンの調整 */
+.opponentFieldManaContainer {
+  display: flex;
+  flex-direction: row; /* フィールドとマナゾーンを横に並べる */
+  flex-grow: 1; /* 残りのスペースを埋める */
+  justify-content: space-between; /* スペースを均等に配分 */
+  align-items: flex-start;
+}
+
+.opponentManaZoneContainer {
+  display: flex;
+  flex-direction: column;
+  width: 20%; /* マナゾーンの幅を調整 */
+  min-width: 80px; /* 最小幅 */
+  align-items: center;
+  margin-left: 0.5rem; /* フィールドとの間にスペース */
+}
+
+/* 相手のPlayedCardsAreaの幅を調整 */
+.opponentArea .playedCardsArea {
+  width: 75%; /* フィールドの幅 */
+  flex-grow: 1; /* 残りのスペースを埋める */
+}
