@@ -16,7 +16,7 @@ const ItemTypes = {
   CARD: 'card',
 };
 
-const App = () => {
+const App = () => { // Added comment to force re-compilation
   const [message, setMessage] = useState('Loading game...'); // 初期メッセージを変更
   const [yourHand, setYourHand] = useState([]);
   const [yourDeckSize, setYourDeckSize] = useState(0);
@@ -265,7 +265,7 @@ const App = () => {
           {/* 相手のエリア */}
           <div className={styles.opponentArea}> {/* クラス名を使用 */}
             <h3>Opponent's Area</h3>
-            <p onClick={() => handleTargetClick('player')} style={{ cursor: isAttacking ? 'pointer' : 'default', color: isAttacking ? 'red' : 'inherit' }}>Opponent's Life: {opponentLife}</p>
+            
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             
@@ -291,7 +291,7 @@ const App = () => {
                       attack={card.attack}
                       defense={card.defense}
                       onCardAction={handleCardAction}
-                      isAttacking={isAttacking} // 攻撃中かどうかを渡す
+                      
                       onTargetClick={handleTargetClick} // ターゲットクリックハンドラを渡す
                     />
                   ))
@@ -346,6 +346,7 @@ const App = () => {
                     isYourTurn={isYourTurn} // 自分のターンかどうかを渡す
                     hasAttackedThisTurn={card.hasAttackedThisTurn} // 攻撃済みフラグを渡す
                     isTapped={card.isTapped} // タップ状態を渡す
+                    isAttacking={attackingCreatures.some(attacker => attacker.attackerId === card.id)} // 攻撃中かどうかを渡す
                   />
                 ))
               )}
