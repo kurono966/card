@@ -294,50 +294,117 @@ io.on('connection', (socket) => {
   });
 
   // 攻撃クリーチャー宣言イベント
+  // 攻撃クリーチャー宣言イベント
   socket.on('declare_attackers', (attackers) => {
+    // 攻撃宣言は現在のターンプレイヤーのみ可能
     if (!players[socket.id] || !players[socket.id].isTurn || !gameActive || currentPhase !== GAME_PHASES.DECLARE_ATTACKERS) {
       console.log(`[Server] Player ${socket.id} tried to declare attackers, but it's not their turn or not in correct phase.`);
       return;
     }
 
+    // 攻撃クリーチャーをリセット
     attackingCreatures = [];
-    attackers.forEach(attackerId => {
+    
+    // 攻撃可能なクリーチャーのみをフィルタリング
+    const validAttackers = attackers.filter(attackerId => {
       const attackerCard = players[socket.id].played.find(c => c.id === attackerId);
-      if (attackerCard && !attackerCard.isTapped) {
+      return attackerCard && !attackerCard.isTapped && !attackerCard.summoningSickness;
+    });
+
+    // 有効な攻撃クリーチャーのみを追加
+    validAttackers.forEach(attackerId => {
+      const attackerCard = players[socket.id].played.find(c => c.id === attackerId);
+      if (attackerCard) {
         attackerCard.isTapped = true; // 攻撃クリーチャーをタップ
-        attackingCreatures.push({ attackerId: attackerId, targetId: 'player' }); // デフォルトでプレイヤーを攻撃対象とする
-      } else {
-        console.log(`[Server] Invalid attacker: ${attackerId} (not found or tapped).`);
+        attackerCard.attacking = true; // 攻撃中フラグを設定
+        attackingCreatures.push({ 
+          attackerId: attackerId, 
+          targetId: 'player', // デフォルトでプレイヤーを攻撃対象
+          controllerId: socket.id // 攻撃コントローラーを記録
+        });
       }
     });
+    
     console.log(`[Server] Declared attackers:`, attackingCreatures);
+    
+    // 攻撃者がいない場合は即座に戦闘ダメージフェイズへ
+    if (attackingCreatures.length === 0) {
+      currentPhase = GAME_PHASES.COMBAT_DAMAGE;
+      console.log(`[Server] No attackers, moving to ${currentPhase}`);
+    } else {
+      // ブロックフェイズに移行
+      currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
+      console.log(`[Server] Moving to ${currentPhase}`);
+    }
+    
     emitFullGameState();
   });
 
   // ブロッククリーチャー宣言イベント
   socket.on('declare_blockers', (assignments) => {
-    if (!players[socket.id] || players[socket.id].isTurn || !gameActive || currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) {
+    // ブロック宣言は現在のターンプレイヤーでない方のみ可能
+    const currentPlayerId = playerOrder[currentPlayerIndex];
+    if (!players[socket.id] || socket.id === currentPlayerId || !gameActive || currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) {
       console.log(`[Server] Player ${socket.id} tried to declare blockers, but it's not their turn or not in correct phase.`);
       return;
     }
 
     blockingAssignments = {};
+    
+    // 有効なブロッカーのみをフィルタリング
     for (const attackerId in assignments) {
       const blockers = assignments[attackerId];
-      blockers.forEach(blockerId => {
+      
+      // 攻撃者が存在するか確認
+      const attackerInfo = attackingCreatures.find(a => a.attackerId === attackerId);
+      if (!attackerInfo) {
+        console.log(`[Server] Invalid attacker ID in block assignment: ${attackerId}`);
+        continue;
+      }
+      
+      // ブロッカーを検証
+      const validBlockers = blockers.filter(blockerId => {
         const blockerCard = players[socket.id].played.find(c => c.id === blockerId);
-        if (blockerCard && !blockerCard.isTapped) { // ブロッカーもタップ状態でないことを確認
-          // ブロッカーはブロック時にタップしない（MTGルール）
-          if (!blockingAssignments[attackerId]) {
-            blockingAssignments[attackerId] = [];
-          }
-          blockingAssignments[attackerId].push(blockerId);
-        } else {
-          console.log(`[Server] Invalid blocker: ${blockerId} (not found or tapped).`);
-        }
+        return blockerCard && !blockerCard.isTapped;
       });
+      
+      if (validBlockers.length > 0) {
+        blockingAssignments[attackerId] = validBlockers;
+        
+        // ブロックしたクリーチャーをタップ（MTGルールに従い、ブロック時にはタップしない）
+        // 注意: 通常、ブロッカーはタップしませんが、ゲームの仕様に応じて調整してください
+        validBlockers.forEach(blockerId => {
+          const blockerCard = players[socket.id].played.find(c => c.id === blockerId);
+          if (blockerCard) blockerCard.blocking = true; // ブロック中フラグを設定
+        });
+      }
     }
+    
     console.log(`[Server] Declared blockers:`, blockingAssignments);
+    
+    // 戦闘ダメージフェイズに移行
+    currentPhase = GAME_PHASES.COMBAT_DAMAGE;
+    console.log(`[Server] Moving to ${currentPhase}`);
+    
+    // 戦闘ダメージを解決
+    resolveCombatDamage();
+    
+    // メインフェイズ2に移行
+    currentPhase = GAME_PHASES.MAIN_PHASE_2;
+    console.log(`[Server] Moving to ${currentPhase}`);
+    
+    // 攻撃・ブロック状態をリセット
+    attackingCreatures = [];
+    blockingAssignments = {};
+    
+    // 攻撃中・ブロック中フラグをリセット
+    Object.values(players).forEach(player => {
+      player.played.forEach(card => {
+        card.attacking = false;
+        card.blocking = false;
+      });
+    });
+    
     emitFullGameState();
   });
 
