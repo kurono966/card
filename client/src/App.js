@@ -10,8 +10,38 @@ import CardDetail from './components/CardDetail'; // CardDetailをインポー�
 
 import styles from './App.module.css'; // CSS Modulesをインポート
 
-// ローカル開発用の接続先に変更
-const socket = io('http://localhost:3000');
+// 環境に応じて接続先を自動切り替え
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const serverUrl = isLocal 
+  ? 'http://localhost:3000' 
+  : 'https://neocard-server.onrender.com';
+
+console.log(`[Client] Connecting to server: ${serverUrl}`);
+const socket = io(serverUrl, {
+  withCredentials: true,
+  // 接続タイムアウトを長めに設定
+  timeout: 10000,
+  // 再接続の設定
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  // トランスポートのフォールバックを有効化
+  transports: ['websocket', 'polling']
+});
+
+// 接続イベントのハンドリング
+socket.on('connect', () => {
+  console.log('[Client] Connected to server:', socket.id);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('[Client] Connection error:', error);
+});
+
+socket.on('disconnect', (reason) => {
+  console.log('[Client] Disconnected:', reason);
+});
 
 const ItemTypes = {
   CARD: 'card',

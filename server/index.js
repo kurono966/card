@@ -7,27 +7,75 @@ const app = express();
 const cors = require('cors');
 app.use(cors());
 const server = http.createServer(app);
+// 環境変数から本番環境かどうかを判定
+const isProduction = process.env.NODE_ENV === 'production';
+
+// 許可するオリジンのリスト
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://neocard-client.vercel.app',
+  'https://cardclient.netlify.app',
+  /https:\/\/neocard-client-.*\.vercel\.app/,
+  /https:\/\/.*\.netlify\.app/
+];
+
+// 本番環境ではセキュアな設定、開発環境では緩和した設定
+const corsOptions = isProduction 
+  ? {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.some(allowed => 
+          typeof allowed === 'string' 
+            ? origin === allowed 
+            : allowed.test(origin)
+        )) {
+          callback(null, true);
+        } else {
+          console.log('Blocked by CORS:', origin);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: ['GET', 'POST'],
+      credentials: true
+    }
+  : {
+      origin: true, // 開発環境ではすべてのオリジンを許可
+      methods: ['GET', 'POST'],
+      credentials: true
+    };
+
 const io = socketIo(server, {
-  cors: {
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://neocard-client.vercel.app",
-        "https://cardclient.netlify.app",
-        "https://*.netlify.app"
-      ];
-      // VercelのプレビューデプロイメントURL（例: https://neocard-client-*.vercel.app）とNetlifyを許可する
-      if (!origin || allowedOrigins.includes(origin) || 
-          /https:\/\/neocard-client-.*\.vercel\.app/.test(origin) ||
-          /https:\/\/.*\.netlify\.app/.test(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ["GET", "POST"],
+  cors: corsOptions,
+  allowEIO3: true // 互換性のため
+});
+
+// CORSヘッダーを追加
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isProduction) {
+    // 本番環境では許可されたオリジンのみを設定
+    if (allowedOrigins.some(allowed => 
+      typeof allowed === 'string' 
+        ? origin === allowed 
+        : allowed.test(origin)
+    )) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
+  } else {
+    // 開発環境ではすべてのオリジンを許可
+    res.header('Access-Control-Allow-Origin', origin || '*');
   }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // プリフライトリクエストへの対応
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
 });
 
 const PORT = process.env.PORT || 3000;
