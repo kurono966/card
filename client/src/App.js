@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import Card from './components/Card';
 import Deck from './components/Deck';
-import Hand from './components/Hand';
+// Hand component is not currently used
 import CardDetail from './components/CardDetail'; // CardDetailをインポート
 
 import styles from './App.module.css'; // CSS Modulesをインポート
@@ -31,7 +31,7 @@ const App = () => { // Added comment to force re-compilation
   const [opponentDeckSize, setOpponentDeckSize] = useState(0);
   const [opponentMaxMana, setOpponentMaxMana] = useState(0);
   const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
-  const [opponentLife, setOpponentLife] = useState(20); // 相手のライフポイントを追加
+  const [, setOpponentLife] = useState(20); // 相手のライフポイントを追加
 
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
@@ -39,7 +39,7 @@ const App = () => { // Added comment to force re-compilation
   const [currentPhase, setCurrentPhase] = useState('main_phase_1'); // 現在のゲームフェーズ
   const [attackingCreatures, setAttackingCreatures] = useState([]); // 攻撃クリーチャーのリスト
   const [blockingAssignments, setBlockingAssignments] = useState({}); // ブロックの割り当て
-  const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
+  const [, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
   const [selectedBlockerCardId, setSelectedBlockerCardId] = useState(null); // 選択されたブロッカーカードのID
 
   // isYourTurn の最新の値を useRef で保持
@@ -100,15 +100,7 @@ const App = () => { // Added comment to force re-compilation
     };
   }, []);
 
-  const handleDrawCard = () => {
-    // 自動ドローになったため、この関数は不要
-    console.log('Draw Card button clicked (should not happen).');
-  };
-
-  const handlePlayCard = (cardId) => {
-    // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
-    console.log('Card clicked (should not happen with D&D):', cardId);
-  };
+  // handleDrawCard and handlePlayCard are not used as they are handled by drag and drop
 
   const handleNextPhase = () => {
     // ブロックフェーズでは、手番に関係なく次に進めるようにする
