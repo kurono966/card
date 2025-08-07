@@ -150,6 +150,12 @@ const App = () => { // Added comment to force re-compilation
             newAttackingCreatures.splice(existingAttackerIndex, 1);
             console.log(`[App.js] Attacker deselected: ${card.id}`);
           }
+          
+          // サーバーに攻撃宣言を送信
+          const attackerIds = newAttackingCreatures.map(attacker => attacker.attackerId);
+          socket.emit('declare_attackers', attackerIds);
+          
+          // ローカルの状態を更新
           setAttackingCreatures(newAttackingCreatures);
         } else {
           alert("Tapped creatures cannot attack!");
@@ -290,9 +296,13 @@ const App = () => { // Added comment to force re-compilation
                       description={card.description}
                       attack={card.attack}
                       defense={card.defense}
-                      onCardAction={handleCardAction}
-                      
-                      onTargetClick={handleTargetClick} // ターゲットクリックハンドラを渡す
+                      onCardAction={isYourTurn ? handleCardAction : null}
+                      isPlayed={true}
+                      isYourTurn={isYourTurn}
+                      hasAttackedThisTurn={false}
+                      isAttacking={false}
+                      isTapped={card.isTapped || false}
+                      onTargetClick={handleTargetClick}
                     />
                   ))
                 )}
@@ -375,7 +385,29 @@ const App = () => { // Added comment to force re-compilation
               {/* 自分の手札 */}
               <div className={styles.handContainer}> 
                 <h3>Your Hand:</h3>
-                <Hand cards={yourHand} onCardAction={handleCardAction} /> {/* onPlayCard を onCardAction に変更 */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                  {yourHand.map(card => (
+                    <Card
+                      key={card.id}
+                      id={card.id}
+                      name={card.name}
+                      value={card.value}
+                      manaCost={card.manaCost}
+                      imageUrl={card.imageUrl}
+                      effect={card.effect}
+                      description={card.description}
+                      attack={card.attack}
+                      defense={card.defense}
+                      onCardAction={handleCardAction}
+                      isPlayed={false}
+                      isYourTurn={isYourTurn}
+                      hasAttackedThisTurn={false}
+                      isAttacking={false}
+                      isTapped={false}
+                      onTargetClick={() => {}}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
