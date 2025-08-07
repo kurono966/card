@@ -414,53 +414,9 @@ io.on('connection', (socket) => {
         currentPhase = GAME_PHASES.MAIN_PHASE_1; // フェーズもリセット
     }
   }
-
-  socket.on('disconnect', () => {
-    console.log('[Server] User disconnected:', socket.id);
-    const disconnectedPlayerId = socket.id;
-    delete players[disconnectedPlayerId];
-    playerOrder = playerOrder.filter(id => id !== disconnectedPlayerId);
-
-    console.log('[Server] Current players after disconnect:', Object.keys(players).length);
-    // プレイヤーが0人になったらゲーム状態をリセット
-    if (Object.keys(players).length === 0) {
-      gameActive = false;
-      playerOrder = [];
-      currentPlayerIndex = 0;
-      currentPhase = GAME_PHASES.MAIN_PHASE_1; // フェーズもリセット
-      console.log('[Server] All players disconnected. Game state reset.');
-    } else if (playerOrder.length === 1) {
-      // 1人になったらゲーム終了
-      gameActive = false; // ゲームはアクティブではない
-      console.log('[Server] One player left. Game ended.');
-      // 残ったプレイヤーのターン状態をリセット（もし待機中だった場合）
-      if (players[playerOrder[0]]) {
-          players[playerOrder[0]].isTurn = false; // 残ったプレイヤーのターンを強制的に終了
-      }
-    }
-    // ターン中のプレイヤーが切断した場合、残ったプレイヤーにターンを渡す
-    // ただし、ゲームがアクティブで、かつ残ったプレイヤーが1人の場合のみ
-    if (gameActive && playerOrder.length === 1 && players[playerOrder[0]]) {
-        players[playerOrder[0]].isTurn = true; // 残ったプレイヤーにターンを渡す
-        players[playerOrder[0]].currentMana = players[playerOrder[0]].maxMana; // マナを回復
-        players[playerOrder[0]].manaPlayedThisTurn = false; // マナプレイフラグをリセット
-        players[playerOrder[0]].drawnThisTurn = false; // ドローフラグをリセット
-        console.log(`[Server] Turn passed to remaining player: ${playerOrder[0]}`);
-    }
-    emitFullGameState(); // 残ったプレイヤーに状態を更新
-  });
 });
 
-
-
+// Start the server
 server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
-
-  
-
-
-
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
