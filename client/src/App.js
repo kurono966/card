@@ -10,7 +10,7 @@ import CardDetail from './components/CardDetail'; // CardDetailをインポー�
 
 import styles from './App.module.css'; // CSS Modulesをインポート
 
-const socket = io('http://localhost:3001/');
+const socket = io('http://neocard-server.vercel.app');
 
 const ItemTypes = {
   CARD: 'card',
