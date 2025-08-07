@@ -135,7 +135,7 @@ const App = () => { // Added comment to force re-compilation
       setSelectedCardDetail(card);
     } else if (actionType === 'attack') {
       // 攻撃ボタンが押された時
-      if (isYourTurnRef.current && currentPhase === 'main_phase_1') {
+      if (isYourTurnRef.current && currentPhase === 'declare_attackers') {
         // 攻撃クリーチャーの選択
         if (!card.isTapped) {
           const newAttackingCreatures = [...attackingCreatures];
