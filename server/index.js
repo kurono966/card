@@ -16,6 +16,7 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://neocard-client.vercel.app',
   'https://cardclient.netlify.app',
+  'https://neocard-server.onrender.com',  // Add the server's own URL
   /https:\/\/neocard-client-.*\.vercel\.app/,
   /https:\/\/.*\.netlify\.app/
 ];
@@ -45,38 +46,56 @@ const corsOptions = isProduction
     };
 
 const io = socketIo(server, {
-  cors: corsOptions,
-  allowEIO3: true // 互換性のため
+  cors: {
+    origin: corsOptions.origin,
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  },
+  allowEIO3: true, // 互換性のため
+  // Enable WebSocket transport with fallback to polling
+  transports: ['websocket', 'polling'],
+  // Add path if your client is using a specific path
+  path: '/socket.io/',
+  // Connection settings
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 10000,
+  maxHttpBufferSize: 1e8,
+  allowUpgrades: true,
+  // Security settings
+  cookie: false,
+  // Enable HTTP long-polling as fallback
+  serveClient: false,
+  // Enable compatibility with older Socket.IO clients
+  allowEIO3: true
 });
 
-// CORSヘッダーを追加
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (isProduction) {
-    // 本番環境では許可されたオリジンのみを設定
+// CORS configuration for regular HTTP requests
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
     if (allowedOrigins.some(allowed => 
       typeof allowed === 'string' 
         ? origin === allowed 
         : allowed.test(origin)
     )) {
-      res.header('Access-Control-Allow-Origin', origin);
+      return callback(null, true);
     }
-  } else {
-    // 開発環境ではすべてのオリジンを許可
-    res.header('Access-Control-Allow-Origin', origin || '*');
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // プリフライトリクエストへの対応
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  next();
-});
+    
+    console.log('CORS blocked for origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 
 const PORT = process.env.PORT || 3000;
 
