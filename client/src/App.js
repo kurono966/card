@@ -40,6 +40,7 @@ const App = () => { // Added comment to force re-compilation
   const [attackingCreatures, setAttackingCreatures] = useState([]); // 攻撃クリーチャーのリスト
   const [blockingAssignments, setBlockingAssignments] = useState({}); // ブロックの割り当て
   const [selectedBlockerCardId, setSelectedBlockerCardId] = useState(null); // 選択されたブロッカーカードのID
+  const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -97,6 +98,96 @@ const App = () => { // Added comment to force re-compilation
       socket.off('effect_triggered');
     };
   }, []);
+
+  // カードをレンダリングする関数
+  const renderCard = (card, index, isPlayed = false, isOpponent = false) => {
+    if (!card) return null;
+    
+    const isAttacking = attackingCreatures.some(a => a.attackerId === card.id);
+    const isBlocking = Object.values(blockingAssignments).some(blockers => 
+      blockers && blockers.includes(card.id)
+    );
+
+    // ブロッカー選択モードの場合、ブロック可能なカードをハイライト
+    const isSelectableBlocker = 
+      !isYourTurn && 
+      currentPhase === 'declare_blockers' && 
+      isPlayed && 
+      !card.isTapped && 
+      !isBlocking;
+
+    // ブロック対象として選択可能なアタッカーをハイライト
+    const isAttackable = 
+      isYourTurn && 
+      currentPhase === 'declare_attackers' && 
+      isPlayed && 
+      !card.isTapped &&
+      !isAttacking;
+
+    return (
+      <div 
+        key={card.id}
+        className={`card-container ${isSelectableBlocker ? 'selectable-blocker' : ''} ${isAttackable ? 'selectable-attacker' : ''}`}
+        onClick={() => {
+          if (isSelectableBlocker) {
+            setSelectedBlockerCardId(card.id);
+          } else if (isAttackable) {
+            handleCardAction(card, 'attack');
+          } else if (currentPhase === 'declare_blockers' && !isYourTurn && selectedBlockerCardId === card.id) {
+            setSelectedBlockerCardId(null);
+          }
+        }}
+      >
+        <Card
+          id={card.id}
+          value={card.value}
+          manaCost={card.manaCost}
+          imageUrl={card.imageUrl}
+          name={card.name}
+          effect={card.effect}
+          description={card.description}
+          attack={card.attack}
+          defense={card.defense}
+          onCardAction={handleCardAction}
+          isPlayed={isPlayed}
+          isYourTurn={isYourTurn}
+          hasAttackedThisTurn={card.hasAttackedThisTurn}
+          isAttacking={isAttacking}
+          isBlocking={isBlocking}
+          isTapped={card.isTapped}
+          onTargetClick={handleTargetClick}
+          isOpponent={isOpponent}
+        />
+        {isSelectableBlocker && (
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 255, 0, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px',
+              pointerEvents: 'none'
+            }}>
+            <span style={{ 
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              BLOCK
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handlePlayCard = (cardId) => {
     // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
