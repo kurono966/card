@@ -187,17 +187,42 @@ const App = () => { // Added comment to force re-compilation
     } else if (currentPhase === 'declare_blockers' && selectedBlockerCardId) {
       // ブロックの割り当て
       const newBlockingAssignments = { ...blockingAssignments };
+      
+      // 既存のブロック割り当てをクリア（1つのブロッカーは1つのアタッカーしかブロックできない）
+      Object.keys(newBlockingAssignments).forEach(attackerId => {
+        newBlockingAssignments[attackerId] = newBlockingAssignments[attackerId].filter(
+          blockerId => blockerId !== selectedBlockerCardId
+        );
+      });
+      
+      // 新しいブロック割り当てを追加
       if (!newBlockingAssignments[targetId]) {
         newBlockingAssignments[targetId] = [];
       }
+      
       // 同じブロッカーが同じ攻撃クリーチャーを複数回ブロックできないようにする
       if (!newBlockingAssignments[targetId].includes(selectedBlockerCardId)) {
         newBlockingAssignments[targetId].push(selectedBlockerCardId);
+        
+        // ブロックの確定をサーバーに送信
+        socket.emit('declare_blockers', newBlockingAssignments);
+        
         setBlockingAssignments(newBlockingAssignments);
         setSelectedBlockerCardId(null);
+        
+        // 効果音やアニメーションを再生する場合はここで
         console.log(`[App.js] Blocker ${selectedBlockerCardId} assigned to ${targetId}`);
+        
+        // ブロックされたことをユーザーに通知
+        const blockerCard = yourPlayedCards.find(c => c.id === selectedBlockerCardId);
+        const attackerCard = opponentPlayedCards.find(c => c.id === targetId);
+        
+        if (blockerCard && attackerCard) {
+          setEffectMessage(`${blockerCard.name} が ${attackerCard.name} をブロックしました！`);
+          setTimeout(() => setEffectMessage(null), 2000);
+        }
       } else {
-        alert("This creature is already blocking this attacker!");
+        alert("このユニットはすでにこの攻撃をブロックしています！");
       }
     } else {
       console.log('[App.js] Not in correct phase or no card selected for action.');
@@ -264,22 +289,28 @@ const App = () => { // Added comment to force re-compilation
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className={styles.appContainer}> {/* クラス名を使用 */}
-        <h1 className={styles.messageHeader}>{message}</h1>        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>        <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
+      <div className={styles.appContainer}>
+        <h1 className={styles.messageHeader}>{message}</h1>
+        <h2 className={styles.turnHeader}>
+          {isYourTurn ? 'Your Turn' : "Opponent's Turn"}
+        </h2>
+        <h3 className={styles.phaseHeader}>
+          Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}
+        </h3>
 
-        <div className={styles.gameArea}> {/* クラス名を使用 */}
+        <div className={styles.gameArea}>
           {/* 相手のエリア */}
-          <div className={styles.opponentArea}> {/* クラス名を使用 */}
+          <div className={styles.opponentArea}>
             <h3>Opponent's Area</h3>
             
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             
-            <div className={styles.opponentFieldManaContainer}> {/* 新しいコンテナ */}
-              <h4>Opponent\'s Played Cards:</h4>
+            <div className={styles.opponentFieldManaContainer}>
+              <h4>Opponent's Played Cards:</h4>
               <div
-                ref={dropOpponentField} // ドロップターゲットとして設定
-                className={`${styles.playedCardsArea} ${isOverOpponentField ? styles.playedCardsAreaOver : ''}`} // クラス名を使用
+                ref={dropOpponentField}
+                className={`${styles.playedCardsArea} ${isOverOpponentField ? styles.playedCardsAreaOver : ''}`}
               >
                 {opponentPlayedCards.length === 0 ? (
                   <p className={styles.emptyZoneText}>No cards played by opponent.</p>
@@ -367,6 +398,9 @@ const App = () => { // Added comment to force re-compilation
               {/* 自分のマナゾーンを手札の左に配置 */}
               <div className={styles.manaZoneContainer}> 
                 <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
+              </div>
+            </div>
+          </div>
                 <h4>Your Mana Zone:</h4>
                 <div
                   ref={dropYourMana} // ドロップターゲットとして設定
@@ -386,60 +420,267 @@ const App = () => { // Added comment to force re-compilation
               <div className={styles.handContainer}> 
                 <h3>Your Hand:</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                  {yourHand.map(card => (
-                    <Card
-                      key={card.id}
-                      id={card.id}
-                      name={card.name}
-                      value={card.value}
-                      manaCost={card.manaCost}
-                      imageUrl={card.imageUrl}
-                      effect={card.effect}
-                      description={card.description}
-                      attack={card.attack}
-                      defense={card.defense}
-                      onCardAction={handleCardAction}
-                      isPlayed={false}
-                      isYourTurn={isYourTurn}
-                      hasAttackedThisTurn={false}
-                      isAttacking={false}
-                      isTapped={false}
-                      onTargetClick={() => {}}
-                    />
-                  ))}
+                  {yourHand.map((card, index) => renderCard(card, index))}
                 </div>
               </div>
             </div>
 
-            {/* デッキとターン終了ボタン */}
-            <div className={styles.deckEndTurnContainer}> 
-              <Deck /> {/* onDrawCard を削除 */}
-              <p>Your Deck Size: {yourDeckSize}</p>
-              <button onClick={handleNextPhase} className={styles.endTurnButton}> {/* クラス名を使用 */}
-                Next Phase
-              </button>
+            {/* ゲームの状態を表示 */}
+            {renderGameInfo()}
+  const renderCard = (card, index, isPlayed = false, isOpponent = false) => {
+    if (!card) return null;
+    
+    const isAttacking = attackingCreatures.some(a => a.attackerId === card.id);
+    const isBlocking = Object.values(blockingAssignments).some(blockers => 
+      blockers && blockers.includes(card.id)
+    );
+
+    // ブロッカー選択モードの場合、ブロック可能なカードをハイライト
+    const isSelectableBlocker = 
+      !isYourTurn && 
+      currentPhase === 'declare_blockers' && 
+      isPlayed && 
+      !card.isTapped && 
+      !isBlocking;
+
+    // ブロック対象として選択可能なアタッカーをハイライト
+    const isAttackable = 
+      isYourTurn && 
+      currentPhase === 'declare_attackers' && 
+      isPlayed && 
+      !card.isTapped &&
+      !isAttacking &&
+      !attackingCreatures.some(a => a.attackerId === card.id);
+
+    return (
+      <div 
+        key={card.id} 
+        className={`card-container ${isSelectableBlocker ? 'selectable-blocker' : ''} ${isAttackable ? 'selectable-attacker' : ''}`}
+        onClick={() => {
+          if (isSelectableBlocker) {
+            setSelectedBlockerCardId(card.id);
+          } else if (isAttackable) {
+            handleCardAction(card, 'attack');
+          } else if (currentPhase === 'declare_blockers' && !isYourTurn && selectedBlockerCardId === card.id) {
+            setSelectedBlockerCardId(null);
+          }
+        }}
+        style={{
+          position: 'relative',
+          cursor: isSelectableBlocker || isAttackable ? 'pointer' : 'default',
+          transition: 'all 0.2s ease',
+          transform: selectedBlockerCardId === card.id ? 'translateY(-10px)' : 'none',
+          zIndex: selectedBlockerCardId === card.id ? 10 : 1,
+          margin: '0 5px',
+          width: '100%',
+          maxWidth: '150px'
+        }}
+      >
+        <Card
+          id={card.id}
+          name={card.name}
+          value={card.value}
+          manaCost={card.manaCost}
+          imageUrl={card.imageUrl}
+          effect={card.effect}
+          description={card.description}
+          attack={card.attack}
+          defense={card.defense}
+          isPlayed={isPlayed}
+          isYourTurn={isYourTurn}
+          hasAttackedThisTurn={false}
+          isAttacking={isAttacking}
+          isTapped={card.isTapped}
+          isBlocking={isBlocking}
+          onCardAction={handleCardAction}
+          onTargetClick={handleTargetClick}
+          currentPhase={currentPhase}
+          isOpponent={isOpponent}
+        />
+        {isSelectableBlocker && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 255, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '8px',
+            pointerEvents: 'none'
+          }}>
+            <span style={{ 
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>ブロックに使用</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // ゲームの状態を表示する関数
+  const renderGameInfo = () => {
+    // 現在のフェーズに応じたメッセージを設定
+    let phaseMessage = `Current Phase: ${currentPhase}`;
+    if (currentPhase === 'declare_attackers' && isYourTurn) {
+      phaseMessage = '攻撃クリーチャーを選択してください';
+    } else if (currentPhase === 'declare_blockers' && !isYourTurn) {
+      phaseMessage = 'ブロッカーを選択してください';
+    }
+
+    return (
+      <div className="game-info">
+        <div>Your Life: {yourLife}</div>
+        <div>Opponent's Life: {opponentLife}</div>
+        <div className={`phase-message ${isYourTurn ? 'your-turn' : 'opponent-turn'}`}>
+          {phaseMessage}
+        </div>
+        {isYourTurn && (
+          <button 
+            onClick={handleNextPhase} 
+            className="next-phase-button"
+            disabled={currentPhase === 'declare_blockers' && !isYourTurn}
+          >
+            {currentPhase === 'declare_attackers' ? '攻撃宣言を確定' : '次のフェーズへ'}
+          </button>
+        )}
+      </div>
+    );
+  };
+  
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="app">
+        <div className="opponent-area">
+          <div className="opponent-info">
+            <div>Opponent's Life: {opponentLife}</div>
+            <div>Mana: {opponentCurrentMana}/{opponentMaxMana}</div>
+            <div>Deck: {opponentDeckSize} cards</div>
+          </div>
+          
+          <div className="battlefield">
+            <div className="opponent-played-cards">
+              {opponentPlayedCards.map((card, index) => renderCard(card, index, true, true))}
+            </div>
+            <div className="player-played-cards">
+              {yourPlayedCards.map((card, index) => renderCard(card, index, true, false))}
             </div>
           </div>
+          
+          <div className="player-info">
+            <div>Your Life: {yourLife}</div>
+            <div>Mana: {yourCurrentMana}/{yourMaxMana}</div>
+            <div>Deck: {yourDeckSize} cards</div>
+          </div>
+          
+          <div className="hand">
+            {yourHand.map((card, index) => renderCard(card, index, false, false))}
+          </div>
+          
+          {renderGameInfo()}
         </div>
+      
+        {/* ゲームメッセージ表示 */}
+        {effectMessage && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            zIndex: 1001,
+            textAlign: 'center',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+            animation: 'fadeInOut 3s ease-in-out',
+            whiteSpace: 'nowrap',
+            fontSize: '1.2em',
+            fontWeight: 'bold'
+          }}>
+            {effectMessage}
+          </div>
+        )}
+        
+        {/* グローバルスタイル */}
+        <style jsx global>{`
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -20px); }
+            10% { opacity: 1; transform: translate(-50%, 0); }
+            90% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
+          }
+          
+          .selectable-blocker {
+            box-shadow: 0 0 10px 5px rgba(0, 255, 0, 0.5);
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+          }
+          
+          .selectable-attacker {
+            box-shadow: 0 0 10px 5px rgba(255, 0, 0, 0.5);
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+          }
+          
+          .card-container {
+            position: relative;
+            transition: all 0.2s ease;
+            margin: 5px;
+          }
+          
+          .card-container:hover {
+            transform: translateY(-5px);
+          }
+          
+          .game-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+          }
+          
+          .phase-message {
+            margin: 10px 0;
+            font-weight: bold;
+          }
+          
+          .your-turn {
+            color: #4caf50;
+          }
+          
+          .opponent-turn {
+            color: #f44336;
+          }
+          
+          .next-phase-button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          }
+          
+          .next-phase-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+          }
+        `}</style>
       </div>
-      {selectedCardDetail && <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />}
-      {effectMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '20px',
-          borderRadius: '10px',
-          zIndex: 1001,
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-        }}>
-          {effectMessage}
-        </div>
-      )}
     </DndProvider>
   );
 };

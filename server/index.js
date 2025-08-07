@@ -341,6 +341,8 @@ io.on('connection', (socket) => {
     const attackerPlayer = players[playerOrder[currentPlayerIndex]];
     const opponentId = playerOrder.find(id => id !== playerOrder[currentPlayerIndex]);
     const opponentPlayer = players[opponentId];
+    let totalDamage = 0;
+    let gameEnded = false;
 
     // 攻撃クリーチャーごとにダメージを解決
     attackingCreatures.forEach(attackInfo => {
@@ -362,28 +364,37 @@ io.on('connection', (socket) => {
             totalBlockerDefense += blockerCard.defense; // ブロッカーの防御力を合計
           }
         });
-
-        // ブロッカーの破壊処理
-        opponentPlayer.played = opponentPlayer.played.filter(c => c.defense > 0);
-        // 攻撃クリーチャーの破壊処理
-        attackerPlayer.played = attackerPlayer.played.filter(c => c.defense > 0);
-
       } else {
-        // ブロックされていない場合、プレイヤーに直接ダメージ
-        opponentPlayer.life -= attackerCard.attack;
-        console.log(`[Server] Player ${opponentId} took ${attackerCard.attack} damage. Life: ${opponentPlayer.life}`);
-        if (opponentPlayer.life <= 0) {
-          console.log(`[Server] Player ${opponentId} defeated!`);
-          io.to(attackerPlayer.socketId).emit('game_over', 'You won!');
-          io.to(opponentId).emit('game_over', 'You lost!');
-          gameActive = false; // ゲーム終了
-        }
+        // ブロックされていない場合、ダメージを合計
+        totalDamage += attackerCard.attack;
       }
     });
 
+    // ブロッカーの破壊処理
+    opponentPlayer.played = opponentPlayer.played.filter(c => c.defense > 0);
+    // 攻撃クリーチャーの破壊処理
+    attackerPlayer.played = attackerPlayer.played.filter(c => c.defense > 0);
+
+    // ブロックされていないダメージを適用
+    if (totalDamage > 0) {
+      opponentPlayer.life -= totalDamage;
+      console.log(`[Server] Player ${opponentId} took ${totalDamage} damage. Life: ${opponentPlayer.life}`);
+      
+      if (opponentPlayer.life <= 0) {
+        console.log(`[Server] Player ${opponentId} defeated!`);
+        io.to(playerOrder[currentPlayerIndex]).emit('game_over', 'You won!');
+        io.to(opponentId).emit('game_over', 'You lost!');
+        gameActive = false; // ゲーム終了
+        gameEnded = true;
+      }
+    }
+
     // 戦闘終了後、攻撃クリーチャーとブロッククリーチャーのリストをクリア
-    attackingCreatures = [];
-    blockingAssignments = {};
+    if (!gameEnded) {
+      attackingCreatures = [];
+      blockingAssignments = {};
+      emitFullGameState();
+    }
   }
 
   function endCurrentTurnAndStartNext() {
