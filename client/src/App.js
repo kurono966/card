@@ -40,7 +40,6 @@ const App = () => { // Added comment to force re-compilation
   const [attackingCreatures, setAttackingCreatures] = useState([]); // 攻撃クリーチャーのリスト
   const [blockingAssignments, setBlockingAssignments] = useState({}); // ブロックの割り当て
   const [selectedBlockerCardId, setSelectedBlockerCardId] = useState(null); // 選択されたブロッカーカードのID
-  const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -187,11 +186,6 @@ const App = () => { // Added comment to force re-compilation
         )}
       </div>
     );
-  };
-
-  const handlePlayCard = (cardId) => {
-    // ドラッグ＆ドロップで処理するため、この関数は直接は使われない
-    console.log('Card clicked (should not happen with D&D):', cardId);
   };
 
   const handleNextPhase = () => {
