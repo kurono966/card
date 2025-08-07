@@ -1,1 +1,1 @@
-feat: Implement attack phase, fix card popup, and display life points.
+feat: Implement MTG-like combat with tapping and untapping creatures.

@@ -36,8 +36,11 @@ const App = () => {
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null); // 選択されたカードの詳細
   const [effectMessage, setEffectMessage] = useState(null); // 効果メッセージ
-  const [isAttacking, setIsAttacking] = useState(false); // 攻撃中かどうか
+  const [currentPhase, setCurrentPhase] = useState('main_phase_1'); // 現在のゲームフェーズ
+  const [attackingCreatures, setAttackingCreatures] = useState([]); // 攻撃クリーチャーのリスト
+  const [blockingAssignments, setBlockingAssignments] = useState({}); // ブロックの割り当て
   const [selectedAttackerCardId, setSelectedAttackerCardId] = useState(null); // 選択された攻撃カードのID
+  const [selectedBlockerCardId, setSelectedBlockerCardId] = useState(null); // 選択されたブロッカーカードのID
 
   // isYourTurn の最新の値を useRef で保持
   const isYourTurnRef = useRef(isYourTurn);
@@ -63,7 +66,7 @@ const App = () => {
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state); // デバッグログを追加
       setYourHand(state.yourHand || []); // デフォルト値を設定
-      setYourDeckSize(state.deckSize);
+      setYourDeckSize(state.yourDeckSize);
       setYourPlayedCards(state.yourPlayedCards || []); // デフォルト値を設定
       setYourManaZone(state.yourManaZone || []); // 元に戻す
       setYourMaxMana(state.yourMaxMana); // 元に戻す
@@ -78,6 +81,9 @@ const App = () => {
       setOpponentLife(state.opponentLife);
 
       setIsYourTurn(state.isYourTurn);
+      setCurrentPhase(state.currentPhase); // 新しいフェーズ状態を追加
+      setAttackingCreatures(state.attackingCreatures || []); // 攻撃クリーチャーの情報を追加
+      setBlockingAssignments(state.blockingAssignments || {}); // ブロックの割り当て情報を追加
     });
 
     socket.on('effect_triggered', (message) => {
@@ -104,9 +110,9 @@ const App = () => {
     console.log('Card clicked (should not happen with D&D):', cardId);
   };
 
-  const handleEndTurn = () => {
+  const handleNextPhase = () => {
     if (isYourTurnRef.current) { // useRef の値を使用
-      socket.emit('end_turn');
+      socket.emit('next_phase');
     } else {
       alert("It's not your turn!");
     }
@@ -129,24 +135,66 @@ const App = () => {
       setSelectedCardDetail(card);
     } else if (actionType === 'attack') {
       // 攻撃ボタンが押された時
-      if (isYourTurnRef.current) {
-        setIsAttacking(true);
-        setSelectedAttackerCardId(card.id);
-        console.log(`[App.js] Attacker selected: ${card.id}`);
+      if (isYourTurnRef.current && currentPhase === 'main_phase_1') {
+        // 攻撃クリーチャーの選択
+        if (!card.isTapped) {
+          const newAttackingCreatures = [...attackingCreatures];
+          const existingAttackerIndex = newAttackingCreatures.findIndex(a => a.attackerId === card.id);
+
+          if (existingAttackerIndex === -1) {
+            // 新しい攻撃クリーチャーを追加
+            newAttackingCreatures.push({ attackerId: card.id, targetId: 'player' }); // デフォルトでプレイヤーを攻撃対象とする
+            console.log(`[App.js] Attacker selected: ${card.id}`);
+          } else {
+            // 既存の攻撃クリーチャーを解除
+            newAttackingCreatures.splice(existingAttackerIndex, 1);
+            console.log(`[App.js] Attacker deselected: ${card.id}`);
+          }
+          setAttackingCreatures(newAttackingCreatures);
+        } else {
+          alert("Tapped creatures cannot attack!");
+        }
       } else {
-        alert("It's not your turn!");
+        alert("It's not your turn or not in the correct phase to declare attackers!");
+      }
+    } else if (actionType === 'block') {
+      // ブロックボタンが押された時
+      if (!isYourTurnRef.current && currentPhase === 'declare_blockers') {
+        // ブロッカーの選択
+        if (!card.isTapped) { // ブロッカーもタップ状態でないことを確認
+          setSelectedBlockerCardId(card.id);
+          console.log(`[App.js] Blocker selected: ${card.id}`);
+        } else {
+          alert("Tapped creatures cannot block!");
+        }
+      } else {
+        alert("It's your turn or not in the correct phase to declare blockers!");
       }
     }
   };
 
   const handleTargetClick = (targetId) => {
-    if (isAttacking && selectedAttackerCardId) {
-      console.log(`[App.js] Attacking with ${selectedAttackerCardId} on ${targetId}`);
-      socket.emit('attack_card', selectedAttackerCardId, targetId);
-      setIsAttacking(false);
-      setSelectedAttackerCardId(null);
+    if (currentPhase === 'declare_attackers' && selectedAttackerCardId) {
+      // 攻撃対象の変更（今回はプレイヤーのみなので不要だが、将来的にカードを攻撃対象にする場合）
+      // socket.emit('attack_card', selectedAttackerCardId, targetId);
+      // setSelectedAttackerCardId(null);
+    } else if (currentPhase === 'declare_blockers' && selectedBlockerCardId) {
+      // ブロックの割り当て
+      const newBlockingAssignments = { ...blockingAssignments };
+      if (!newBlockingAssignments[targetId]) {
+        newBlockingAssignments[targetId] = [];
+      }
+      // 同じブロッカーが同じ攻撃クリーチャーを複数回ブロックできないようにする
+      if (!newBlockingAssignments[targetId].includes(selectedBlockerCardId)) {
+        newBlockingAssignments[targetId].push(selectedBlockerCardId);
+        setBlockingAssignments(newBlockingAssignments);
+        setSelectedBlockerCardId(null);
+        console.log(`[App.js] Blocker ${selectedBlockerCardId} assigned to ${targetId}`);
+      } else {
+        alert("This creature is already blocking this attacker!");
+      }
     } else {
-      console.log('[App.js] Not in attacking mode or no attacker selected.');
+      console.log('[App.js] Not in correct phase or no card selected for action.');
     }
   };
 
@@ -211,8 +259,7 @@ const App = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={styles.appContainer}> {/* クラス名を使用 */}
-        <h1 className={styles.messageHeader}>{message}</h1>
-        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h1 className={styles.messageHeader}>{message}</h1>        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>        <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
 
         <div className={styles.gameArea}> {/* クラス名を使用 */}
           {/* 相手のエリア */}
@@ -335,8 +382,8 @@ const App = () => {
             <div className={styles.deckEndTurnContainer}> 
               <Deck /> {/* onDrawCard を削除 */}
               <p>Your Deck Size: {yourDeckSize}</p>
-              <button onClick={handleEndTurn} className={styles.endTurnButton}> {/* クラス名を使用 */}
-                End Turn
+              <button onClick={handleNextPhase} className={styles.endTurnButton}> {/* クラス名を使用 */}
+                Next Phase
               </button>
             </div>
           </div>
