@@ -315,8 +315,8 @@ io.on('connection', (socket) => {
     validAttackers.forEach(attackerId => {
       const attackerCard = players[socket.id].played.find(c => c.id === attackerId);
       if (attackerCard) {
-        attackerCard.isTapped = true; // 攻撃クリーチャーをタップ
-        attackerCard.attacking = true; // 攻撃中フラグを設定
+        // 攻撃中フラグを設定（タップはブロックフェイズで行う）
+        attackerCard.attacking = true;
         attackingCreatures.push({ 
           attackerId: attackerId, 
           targetId: 'player', // デフォルトでプレイヤーを攻撃対象
@@ -335,6 +335,14 @@ io.on('connection', (socket) => {
       // ブロックフェイズに移行
       currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
       console.log(`[Server] Moving to ${currentPhase}`);
+      
+      // 攻撃クリーチャーをタップ（ブロックフェイズに移行するタイミングでタップ）
+      attackingCreatures.forEach(attacker => {
+        const attackerCard = players[attacker.controllerId].played.find(c => c.id === attacker.attackerId);
+        if (attackerCard) {
+          attackerCard.isTapped = true;
+        }
+      });
     }
     
     emitFullGameState();

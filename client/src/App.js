@@ -10,7 +10,8 @@ import CardDetail from './components/CardDetail'; // CardDetailをインポー�
 
 import styles from './App.module.css'; // CSS Modulesをインポート
 
-const socket = io('https://neocard-server.onrender.com');
+// ローカル開発用の接続先に変更
+const socket = io('http://localhost:3000');
 
 const ItemTypes = {
   CARD: 'card',
@@ -362,7 +363,7 @@ const App = () => { // Added comment to force re-compilation
                     isYourTurn={isYourTurn} // 自分のターンかどうかを渡す
                     hasAttackedThisTurn={card.hasAttackedThisTurn} // 攻撃済みフラグを渡す
                     isTapped={card.isTapped} // タップ状態を渡す
-                    isAttacking={attackingCreatures.some(attacker => attacker.attackerId === card.id)} // 攻撃中かどうかを渡す
+                    isAttacking={isYourTurn && attackingCreatures.some(attacker => attacker.attackerId === card.id)} // 自分のターンで攻撃中かどうか
                   />
                 ))
               )}

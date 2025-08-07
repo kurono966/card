@@ -82,7 +82,7 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
         <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>⚔️{attack}</span>
         <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>🛡️{defense}</span>
       </div>
-      {isPlayed && isYourTurn && !hasAttackedThisTurn && currentPhase === 'declare_attackers' && (
+      {isPlayed && isYourTurn && currentPhase === 'declare_attackers' && !isTapped && !hasAttackedThisTurn && (
         <button
           onClick={handleAttack}
           style={{
@@ -90,13 +90,13 @@ const Card = ({ id, name, value, manaCost, imageUrl, effect, description, attack
             padding: '2px 5px',
             fontSize: '0.6em',
             cursor: 'pointer',
-            backgroundColor: '#ff5555',
+            backgroundColor: isAttacking ? '#55aa55' : '#ff5555',
             color: 'white',
             border: 'none',
             borderRadius: '3px',
           }}
         >
-          攻撃
+          {isAttacking ? '攻撃中' : '攻撃'}
         </button>
       )}
       {canBlock && (
