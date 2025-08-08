@@ -472,7 +472,16 @@ const App = () => {
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state);
       setPlayerHand(state.yourHand || []);
-      setPlayerDeckSize(state.yourDeckSize);
+      // Use the correct state setters for deck
+      if (state.yourDeckSize !== undefined) {
+        setPlayerDeck(prev => {
+          // If we don't have the actual deck, create a placeholder array
+          if (prev.length === 0 && state.yourDeckSize > 0) {
+            return Array(state.yourDeckSize).fill(null);
+          }
+          return prev;
+        });
+      }
       setYourPlayedCards(state.yourPlayedCards || []);
       setYourManaZone(state.yourManaZone || []);
       setYourMaxMana(state.yourMaxMana);
@@ -481,7 +490,16 @@ const App = () => {
 
       setOpponentPlayedCards(state.opponentPlayedCards || []);
       setOpponentManaZone(state.opponentManaZone || []);
-      setOpponentDeckSize(state.opponentDeckSize);
+      // Use the correct state setters for opponent deck
+      if (state.opponentDeckSize !== undefined) {
+        setOpponentDeck(prev => {
+          // If we don't have the actual deck, create a placeholder array
+          if (prev.length === 0 && state.opponentDeckSize > 0) {
+            return Array(state.opponentDeckSize).fill(null);
+          }
+          return prev;
+        });
+      }
       setOpponentMaxMana(state.opponentMaxMana);
       setOpponentCurrentMana(state.opponentCurrentMana);
       setOpponentLife(state.opponentLife);
