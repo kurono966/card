@@ -119,6 +119,18 @@ const allCards = [
     defense: 10,
     abilities: [],
   },
+  {
+    id: "card_011",
+    name: "火炎放射器",
+    value: 11,
+    manaCost: 3,
+    imageUrl: "/IMG_11.jpg",
+    effect: "Deal 2 damage to opponent creature",
+    description: "プレイ時、相手のクリーチャー1体に2ダメージを与える。",
+    attack: 2,
+    defense: 2,
+    abilities: [],
+  },
 ];
 
 module.exports = allCards;

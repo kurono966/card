@@ -232,6 +232,17 @@ io.on('connection', (socket) => {
             }
           }
           // 他の効果があればここに追加
+        } else if (card.effect === "Deal 2 damage to opponent creature") {
+            // Inform client to select a target
+            io.to(socket.id).emit('request_target_for_effect', {
+              type: 'deal_damage',
+              amount: 2,
+              sourceCardId: card.id,
+              message: `Select an opponent's creature to deal 2 damage to.`
+            });
+            console.log(`[Server] Player ${socket.id} played ${card.name}, requesting target for 2 damage.`);
+          }
+          // 他の効果があればここに追加
         }
 
       } else {

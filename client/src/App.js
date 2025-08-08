@@ -45,6 +45,142 @@ const App = () => {
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
 
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+
   const isYourTurnRef = useRef(isYourTurn);
   useEffect(() => {
     isYourTurnRef.current = isYourTurn;
@@ -100,14 +236,22 @@ const App = () => {
       setTimeout(() => setEffectMessage(null), 3000);
     });
 
+    // New listener for effect targeting
+    socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
+      setIsTargetingEffect(true);
+      setEffectSourceCardId(sourceCardId);
+      setEffectMessageForTarget(message);
+      // Optionally, highlight potential targets here if needed
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
       socket.off('game_state');
       socket.off('effect_triggered');
+      socket.off('request_target_for_effect'); // Clean up new listener
     };
-  }, [currentPhase]);
 
   const handleNextPhase = () => {
     // 自分のターンかどうかで処理を分岐
@@ -136,6 +280,26 @@ const App = () => {
     } else if (actionType === 'leave') {
       setSelectedCardDetail(null);
     } else if (actionType === 'click') {
+      // --- Effect Targeting Logic ---
+      if (isTargetingEffect) {
+        // Only allow targeting opponent's played creatures
+        const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
+        if (targetCreature) {
+          socket.emit('resolve_effect_target', {
+            sourceCardId: effectSourceCardId,
+            targetCardId: card.id,
+            effectType: 'deal_damage', // Assuming this is the only effect type for now
+            amount: 2 // Assuming 2 damage for now
+          });
+          setIsTargetingEffect(false);
+          setEffectSourceCardId(null);
+          setEffectMessageForTarget(null);
+        } else {
+          console.log('Invalid target for effect: Not an opponent creature.');
+        }
+        return; // Prevent other click actions while targeting
+      }
+
       // --- Attack Phase Logic ---
       if (isYourTurn && currentPhase === 'declare_attackers') {
         const myCard = yourPlayedCards.find(c => c.id === card.id);
