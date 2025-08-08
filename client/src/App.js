@@ -207,6 +207,7 @@ const App = () => {
           {/* Opponent's Area */}
           <div className={styles.opponentArea}>
             <h3>Opponent's Area</h3>
+            <p>Opponent's Life: {opponentLife}</p>
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             <div className={styles.opponentFieldManaContainer}>
@@ -219,9 +220,9 @@ const App = () => {
                     isPlayed={true}
                     isTapped={card.isTapped || false}
                     isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
-                    isSelectedAttacker={false}
-                    isSelectedBlocker={false}
-                    isSelectedTarget={selectedTarget === card.id}
+                                      isSelectedAttacker={false}
+                  isSelectedBlocker={false}
+                  isSelectedTarget={selectedTarget === card.id}
                   />
                 ))}
               </div>
@@ -229,7 +230,7 @@ const App = () => {
                 <h4>Opponent's Mana Zone:</h4>
                 <div className={styles.manaZone}>
                   {opponentManaZone.length > 0 ? (
-                    opponentManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
+                    opponentManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
                   ) : (
                     <p className={styles.emptyZoneText}>Empty</p>
                   )}
@@ -254,7 +255,7 @@ const App = () => {
                   isSelectedAttacker={selectedAttackers.has(card.id)}
                   isSelectedBlocker={blockingAssignments[selectedTarget] && blockingAssignments[selectedTarget].includes(card.id)} // 確定したブロッカー
                   isTempSelectedBlocker={tempSelectedBlocker === card.id} // 仮選択中のブロッカー
-                  isSelectedTarget={false}
+                  isSelectedTarget={selectedTarget === card.id}
                 />
               ))}
             </div>
@@ -265,7 +266,7 @@ const App = () => {
                 <h4>Your Mana Zone:</h4>
                 <div ref={dropYourMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
                   {yourManaZone.length > 0 ? (
-                    yourManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
+                    yourManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
                   ) : (
                     <p className={styles.emptyZoneText}>Empty</p>
                   )}
