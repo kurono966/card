@@ -1,12 +1,23 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const allCards = require('./cardData'); // cardData.jsをインポート
+const allCards = require('./cardData');
+
+console.log('Starting server...');
 
 const app = express();
 const cors = require('cors');
-app.use(cors());
+
+// Enable CORS for all routes
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://neocard-client.vercel.app'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 const server = http.createServer(app);
+
+// Configure Socket.IO with CORS
 const io = socketIo(server, {
   cors: {
     origin: (origin, callback) => {

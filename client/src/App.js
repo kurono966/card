@@ -9,7 +9,48 @@ import CardDetail from './components/CardDetail';
 
 import styles from './App.module.css';
 
-const socket = io('https://neocard-server.onrender.com');
+// Determine the server URL based on the current environment
+const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const serverUrl = isLocalDevelopment 
+  ? 'http://localhost:3001' 
+  : 'https://neocard-server.onrender.com';
+
+console.log(`Connecting to ${isLocalDevelopment ? 'local' : 'remote'} server:`, serverUrl);
+
+const socket = io(serverUrl, {
+  // Connection options
+  reconnection: true,
+  reconnectionAttempts: 10,  // Increased from 5 to 10
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 10000,
+  timeout: 20000,  // Increased timeout to 20 seconds
+  withCredentials: true,
+  // Try polling first, then upgrade to websocket
+  transports: ['polling', 'websocket'],
+  // Disable auto-connect - we'll connect manually after setting up handlers
+  autoConnect: false
+});
+
+// Add connection event handlers
+socket.on('connect', () => {
+  console.log('Connected to server with ID:', socket.id);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Connection error:', error.message);
+  console.log('Attempting to reconnect...');
+});
+
+socket.on('disconnect', (reason) => {
+  console.log('Disconnected from server. Reason:', reason);
+  if (reason === 'io server disconnect') {
+    // The disconnection was initiated by the server, you need to reconnect manually
+    socket.connect();
+  }
+});
+
+// Manually connect after setting up all handlers
+socket.connect();
 
 const ItemTypes = {
   CARD: 'card',
