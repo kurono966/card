@@ -228,6 +228,12 @@ const App = () => {
         const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
         if (targetCreature) {
           console.log('[App.js] Valid target selected:', targetCreature);
+          console.log('[App.js] Emitting resolve_effect_target with:', {
+            sourceCardId: effectSourceCardId,
+            targetCardId: card.id,
+            effectType: effectTypeForTarget,
+            amount: effectAmountForTarget,
+          });
           socket.emit('resolve_effect_target', {
             sourceCardId: effectSourceCardId,
             targetCardId: card.id,
