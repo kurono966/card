@@ -181,6 +181,7 @@ const App = () => {
       setEffectMessageForTarget(message);
       setEffectTypeForTarget(type);
       setEffectAmountForTarget(amount);
+      console.log('[App.js] isTargetingEffect set to true.', isTargetingEffectRef.current);
       // Optionally, highlight potential targets here if needed
     });
 
