@@ -228,7 +228,11 @@ const App = () => {
               <div className={styles.opponentManaZoneContainer}>
                 <h4>Opponent's Mana Zone:</h4>
                 <div className={styles.manaZone}>
-                  {opponentManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)}
+                  {opponentManaZone.length > 0 ? (
+                    opponentManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
+                  ) : (
+                    <p className={styles.emptyZoneText}>Empty</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -260,7 +264,11 @@ const App = () => {
                 <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
                 <h4>Your Mana Zone:</h4>
                 <div ref={dropYourMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
-                  {yourManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)}
+                  {yourManaZone.length > 0 ? (
+                    yourManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
+                  ) : (
+                    <p className={styles.emptyZoneText}>Empty</p>
+                  )}
                 </div>
               </div>
 

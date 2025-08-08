@@ -115,11 +115,14 @@
 }
 
 .manaZone {
-  /* min-height: 4rem; を削除 */
+  min-height: 7.5vw; /* カードの高さに合わせて調整 */
   max-height: 10vh; /* マナゾーンの最大高さを設定 */
   overflow-y: auto; /* 必要に応じてスクロール */
   border: 1px dashed #bd93f9; /* 紫系 */
   align-content: flex-start; /* カードが複数行にわたる場合に上から詰める */
+  display: flex; /* flexbox を有効にする */
+  justify-content: center; /* 中央寄せ */
+  align-items: center; /* 中央寄せ */
 }
 
 .playedCardsArea {
@@ -136,8 +139,9 @@
 }
 
 .emptyZoneText {
-  font-size: 0.8rem;
-  color: #f8f8f2; /* エリア内の文字色と同じ */
+  font-size: 0.9rem; /* 少し大きく */
+  color: #f8f8f2;
+  opacity: 0.6; /* 少し薄く */
 }
 
 .endTurnButton {

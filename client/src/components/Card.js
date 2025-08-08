@@ -31,7 +31,7 @@ const Card = ({
   };
 
   const borderColor = isSelectedTarget ? '#ff5555' :      // ブロック対象の攻撃クリーチャー
-                      isTempSelectedBlocker ? '#ffff00' : // 仮選択中のブロッカー (黄色など)
+                      (isTempSelectedBlocker && selectedTarget) ? '#50fa7b' : // 仮選択中のブロッカー (緑) - 攻撃対象が選択されている場合のみ
                       isSelectedAttacker ? '#f1fa8c' :  // 攻撃選択中の自分のクリーチャー
                       isSelectedBlocker ? '#50fa7b' :   // ブロック選択中の自分のクリーチャー
                       isAttacking ? '#ffb86c' :         // 攻撃中のクリーチャー
