@@ -49,8 +49,6 @@ const App = () => {
   const [effectSourceCardId, setEffectSourceCardId] = useState(null);
   const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
 
-  const [requestTargetForEffect, setRequestTargetForEffect] = useState(null); // New state for target selection
-
   const isYourTurnRef = useRef(isYourTurn);
   useEffect(() => {
     isYourTurnRef.current = isYourTurn;
@@ -107,11 +105,10 @@ const App = () => {
     });
 
     // New listener for effect targeting
-    socket.on('request_target_for_effect', (data) => {
+    socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
       setIsTargetingEffect(true);
-      setEffectSourceCardId(data.sourceCardId);
-      setEffectMessageForTarget(data.message);
-      setRequestTargetForEffect(data); // Store the full data for later use
+      setEffectSourceCardId(sourceCardId);
+      setEffectMessageForTarget(message);
       // Optionally, highlight potential targets here if needed
     });
 
@@ -146,22 +143,6 @@ const App = () => {
     }
   };
 
-  // New function to handle target selection
-  const handleSelectTarget = (targetId) => {
-    if (requestTargetForEffect) {
-      socket.emit('select_target_for_effect', {
-        targetId: targetId,
-        sourceCardId: requestTargetForEffect.sourceCardId,
-        effectType: requestTargetForEffect.type,
-        amount: requestTargetForEffect.amount,
-      });
-      setIsTargetingEffect(false);
-      setEffectSourceCardId(null);
-      setEffectMessageForTarget(null);
-      setRequestTargetForEffect(null); // Reset target selection state
-    }
-  };
-
   const handleCardAction = (card, actionType) => {
     if (actionType === 'hover') {
       setSelectedCardDetail(card);
@@ -173,7 +154,15 @@ const App = () => {
         // Only allow targeting opponent's played creatures
         const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
         if (targetCreature) {
-          handleSelectTarget(card.id); // Use the new handler
+          socket.emit('resolve_effect_target', {
+            sourceCardId: effectSourceCardId,
+            targetCardId: card.id,
+            effectType: 'deal_damage', // Assuming this is the only effect type for now
+            amount: 2 // Assuming 2 damage for now
+          });
+          setIsTargetingEffect(false);
+          setEffectSourceCardId(null);
+          setEffectMessageForTarget(null);
         } else {
           console.log('Invalid target for effect: Not an opponent creature.');
         }
@@ -181,6 +170,50 @@ const App = () => {
       }
 
       // --- Attack Phase Logic ---
+      if (isYourTurn && currentPhase === 'declare_attackers') {
+        const myCard = yourPlayedCards.find(c => c.id === card.id);
+        console.log('Card clicked to attack: ', myCard);
+        if (myCard && !myCard.isTapped && myCard.canAttack) {
+          const newSelectedAttackers = new Map(selectedAttackers);
+          if (newSelectedAttackers.has(card.id)) {
+            newSelectedAttackers.delete(card.id);
+          } else {
+            newSelectedAttackers.set(card.id, card);
+          }
+          setSelectedAttackers(newSelectedAttackers);
+        }
+      }
+
+      // --- Block Phase Logic ---
+      if (!isYourTurn && currentPhase === 'declare_blockers') {
+        const opponentAttacker = opponentPlayedCards.find(c => c.id === card.id && attackingCreatures.some(a => a.attackerId === c.id));
+        const myBlocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
+
+        if (opponentAttacker) {
+          setSelectedTarget(card.id);
+          setTempSelectedBlocker(null); // 攻撃対象を選択したら仮ブロッカー選択をリセット
+        } else if (myBlocker) {
+          // 既に攻撃対象が選択されている場合のみ、ブロッカーを仮選択
+          if (selectedTarget) {
+            setTempSelectedBlocker(card.id);
+          }
+        }
+
+        // 攻撃対象と仮選択されたブロッカーの両方が存在する場合にブロックを確定
+        if (selectedTarget && tempSelectedBlocker) {
+          const newAssignments = { ...blockingAssignments };
+          if (!newAssignments[selectedTarget]) {
+            newAssignments[selectedTarget] = [];
+          }
+          if (!newAssignments[selectedTarget].includes(tempSelectedBlocker)) {
+            newAssignments[selectedTarget].push(tempSelectedBlocker);
+          }
+          setBlockingAssignments(newAssignments);
+          socket.emit('declare_blockers', newAssignments); // Send updates immediately
+          setSelectedTarget(null);
+          setTempSelectedBlocker(null); // ブロック割り当て後、仮選択をリセット
+        }
+      }
     }
   };
 
@@ -307,23 +340,6 @@ const App = () => {
           </div>
         </div>
       </div>
-      {/* Target Selection Overlay */}
-      {isTargetingEffect && requestTargetForEffect && (
-        <div className={styles.targetSelectionOverlay}>
-          <h2>{effectMessageForTarget}</h2>
-          <div className={styles.opponentFieldForTargeting}>
-            {opponentPlayedCards.map((card) => (
-              <div
-                key={card.id}
-                className={styles.targetableCard}
-                onClick={() => handleSelectTarget(card.id)}
-              >
-                <Card card={card} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {selectedCardDetail && (
         <div style={{
           position: 'fixed',
