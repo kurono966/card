@@ -48,6 +48,8 @@ const App = () => {
   const [isTargetingEffect, setIsTargetingEffect] = useState(false);
   const [effectSourceCardId, setEffectSourceCardId] = useState(null);
   const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
+  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
 
   const isYourTurnRef = useRef(isYourTurn);
   useEffect(() => {
@@ -109,6 +111,8 @@ const App = () => {
       setIsTargetingEffect(true);
       setEffectSourceCardId(sourceCardId);
       setEffectMessageForTarget(message);
+      setEffectTypeForTarget(type);
+      setEffectAmountForTarget(amount);
       // Optionally, highlight potential targets here if needed
     });
 
@@ -157,8 +161,8 @@ const App = () => {
           socket.emit('resolve_effect_target', {
             sourceCardId: effectSourceCardId,
             targetCardId: card.id,
-            effectType: 'deal_damage', // Assuming this is the only effect type for now
-            amount: 2 // Assuming 2 damage for now
+            effectType: effectTypeForTarget,
+            amount: effectAmountForTarget,
           });
           setIsTargetingEffect(false);
           setEffectSourceCardId(null);
