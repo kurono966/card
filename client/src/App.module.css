@@ -110,7 +110,7 @@
   border-radius: 5px;
   box-sizing: border-box;
   background-color: #44475a; /* ゾーンの背景色 */
-  flex-shrink: 0; /* 縮小しない */
+  flex-shrink: 1; /* 縮小を許可 */
 }
 
 .manaZone {
