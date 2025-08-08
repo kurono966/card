@@ -194,7 +194,7 @@
   border-radius: 5px;
   box-sizing: border-box;
   background-color: #44475a; /* ゾーンの背景色 */
-  flex-shrink: 0;
+  flex-shrink: 1;
   min-height: 7.5vh; /* カードの高さに合わせて調整 */
   max-height: 10vh; /* マナゾーンの最大高さを設定 */
   overflow-y: auto; /* 必要に応じてスクロール */

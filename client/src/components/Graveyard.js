@@ -16,20 +16,23 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
   }));
 
   const graveyardStyle = {
-    width: '100px',
-    height: '150px',
     border: '2px dashed #666',
     borderRadius: '10px',
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row', // カードを横に並べる
+    flexWrap: 'wrap', // 折り返しを許可
+    alignItems: 'flex-start', // 上揃え
+    justifyContent: 'flex-start', // 左揃え
     backgroundColor: isOver ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.3)',
     color: 'white',
     position: 'relative',
-    overflow: 'hidden',
+    overflowY: 'auto', // 縦スクロールを許可
+    flexGrow: 1, // 利用可能なスペースを埋める
+    minHeight: '7.5vh', // 最小高さを設定 (App.module.cssのmanaZoneに合わせる)
+    maxHeight: '10vh', // 最大高さを設定 (App.module.cssのmanaZoneに合わせる)
     margin: '0 10px',
     transition: 'all 0.3s ease',
+    padding: '0.2vh', // App.module.cssのmanaZoneに合わせる
   };
 
   const countStyle = {
@@ -47,46 +50,32 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
     fontWeight: 'bold',
   };
 
-  const topCard = cards.length > 0 ? cards[cards.length - 1] : null;
-
   return (
     <div ref={drop} style={graveyardStyle}>
-      {cards.length > 0 && (
-        <div style={{ position: 'absolute', width: '100%', height: '100%' }}>
+      {cards.length === 0 ? (
+        <p style={{ fontSize: '0.9rem', color: '#f8f8f2', opacity: 0.6 }}>
+          {isOpponent ? '相手の墓地' : '墓地'}
+        </p>
+      ) : (
+        cards.map((card) => (
           <Card
-            key={topCard.id}
-            id={topCard.id}
-            name={topCard.name}
-            value={topCard.value}
-            manaCost={topCard.manaCost}
-            imageUrl={topCard.imageUrl}
-            effect={topCard.effect}
-            description={topCard.description}
-            attack={topCard.attack}
-            defense={topCard.defense}
-            isPlayed={true}
-            style={{
-              transform: 'rotate(90deg) scale(0.6)',
-              position: 'absolute',
-              top: '-25%',
-              left: '-25%',
-              opacity: 0.8,
-            }}
+            key={card.id}
+            id={card.id}
+            name={card.name}
+            value={card.value}
+            manaCost={card.manaCost}
+            imageUrl={card.imageUrl}
+            effect={card.effect}
+            description={card.description}
+            attack={card.attack}
+            defense={card.defense}
+            isPlayed={true} // 墓地のカードはプレイ済み扱い
+            onCardAction={onCardAction} // マウスオーバーイベントを渡す
           />
-        </div>
+        ))
       )}
       <div style={countStyle}>
         {cards.length}
-      </div>
-      <div style={{ 
-        position: 'absolute', 
-        bottom: '5px', 
-        fontSize: '12px',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', 
-        padding: '2px 5px',
-        borderRadius: '3px'
-      }}>
-        {isOpponent ? '相手の墓地' : '墓地'}
       </div>
     </div>
   );
