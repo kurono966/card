@@ -232,7 +232,8 @@ io.on('connection', (socket) => {
             }
           }
           // 他の効果があればここに追加
-        } else if (card.effect === "Deal 2 damage to opponent creature") {
+        } 
+        else if (card.effect === "Deal 2 damage to opponent creature") {
             // Inform client to select a target
             io.to(socket.id).emit('request_target_for_effect', {
               type: 'deal_damage',
@@ -255,39 +256,38 @@ io.on('connection', (socket) => {
     emitFullGameState();
   });
 
-  // カード効果のターゲット解決イベント
-  socket.on('resolve_effect_target', ({ sourceCardId, targetCardId, effectType, amount }) => {
-    const currentPlayerSocketId = playerOrder[currentPlayerIndex];
-    const opponentPlayerId = playerOrder.find(id => id !== currentPlayerSocketId);
-    const opponentPlayer = players[opponentPlayerId];
-
-    if (!opponentPlayer) {
-      console.log(`[Server] Opponent player not found for effect target resolution.`);
+  // ターゲット選択イベント (クライアントからターゲットが選択された後に受信)
+  socket.on('select_target_for_effect', ({ targetId, sourceCardId, effectType, amount }) => {
+    if (!players[socket.id] || !players[socket.id].isTurn || !gameActive) {
+      console.log(`[Server] Player ${socket.id} tried to select target, but it's not their turn or game not active.`);
       return;
     }
 
-    // Find the target creature
-    const targetCreatureIndex = opponentPlayer.played.findIndex(c => c.id === targetCardId);
-    if (targetCreatureIndex === -1) {
-      console.log(`[Server] Target creature ${targetCardId} not found on opponent's field.`);
-      return;
-    }
-
-    const targetCreature = opponentPlayer.played[targetCreatureIndex];
+    const opponentId = playerOrder.find(id => id !== socket.id);
+    const opponentPlayer = players[opponentId];
 
     if (effectType === 'deal_damage') {
-      targetCreature.defense -= amount;
-      console.log(`[Server] Creature ${targetCreature.name} took ${amount} damage. Remaining defense: ${targetCreature.defense}`);
+      const targetCardIndex = opponentPlayer.played.findIndex(c => c.id === targetId);
+      if (targetCardIndex === -1) {
+        console.log(`[Server] Player ${socket.id} tried to deal damage to non-existent target: ${targetId}`);
+        return;
+      }
 
-      // Check if creature is destroyed
-      if (targetCreature.defense <= 0) {
-        opponentPlayer.played.splice(targetCreatureIndex, 1); // Remove from played cards
-        console.log(`[Server] Creature ${targetCreature.name} destroyed.`);
+      const targetCard = opponentPlayer.played[targetCardIndex];
+      targetCard.defense -= amount;
+      console.log(`[Server] ${targetCard.name} took ${amount} damage. Remaining defense: ${targetCard.defense}`);
+
+      if (targetCard.defense <= 0) {
+        opponentPlayer.played.splice(targetCardIndex, 1); // クリーチャーを破壊
+        console.log(`[Server] ${targetCard.name} was destroyed.`);
+        io.to(socket.id).emit('effect_triggered', `${targetCard.name} was destroyed by your card's effect!`);
+        io.to(opponentId).emit('effect_triggered', `${targetCard.name} was destroyed by opponent's card's effect!`);
+      } else {
+        io.to(socket.id).emit('effect_triggered', `${targetCard.name} took ${amount} damage.`);
+        io.to(opponentId).emit('effect_triggered', `${targetCard.name} took ${amount} damage from opponent's card.`);
       }
     }
-    // Add other effect types here if needed
-
-    emitFullGameState(); // Update all clients with new game state
+    emitFullGameState();
   });
 
   // フェーズ進行イベント
