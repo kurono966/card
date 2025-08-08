@@ -109,22 +109,23 @@ const App = () => {
   }, [currentPhase]);
 
   const handleNextPhase = () => {
+    // 自分のターンかどうかで処理を分岐
     if (isYourTurnRef.current) {
+      // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
       if (currentPhase === 'declare_attackers') {
         const attackerIds = Array.from(selectedAttackers.keys());
         socket.emit('declare_attackers', attackerIds);
-      } else if (currentPhase === 'declare_blockers') {
-        socket.emit('declare_blockers', blockingAssignments);
+        socket.emit('next_phase'); // サーバーにフェーズ進行を要求
+      } else if (currentPhase !== 'declare_blockers') {
+        // ブロック宣言フェイズ以外なら、単純にフェーズを進める
+        socket.emit('next_phase');
       }
-      socket.emit('next_phase');
     } else {
-        // Allow non-turn player to advance only from declare_blockers
-        if (currentPhase === 'declare_blockers') {
-            socket.emit('declare_blockers', blockingAssignments); // ブロッカー情報を送信
-            socket.emit('next_phase');
-        } else {
-            alert("It's not your turn!");
-        }
+      // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
+      if (currentPhase === 'declare_blockers') {
+        socket.emit('declare_blockers', blockingAssignments);
+        socket.emit('next_phase');
+      }
     }
   };
 
@@ -279,7 +280,10 @@ const App = () => {
             <div className={styles.deckEndTurnContainer}>
               <Deck />
               <p>Your Deck Size: {yourDeckSize}</p>
-              <button onClick={handleNextPhase} className={styles.endTurnButton}>
+              <button 
+                onClick={handleNextPhase} 
+                className={styles.endTurnButton}
+                disabled={!isYourTurn && currentPhase !== 'declare_blockers' || isYourTurn && currentPhase === 'declare_blockers'}>
                 {currentPhase === 'declare_attackers' ? 'Declare Attack' : 
                  (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
               </button>
@@ -289,7 +293,7 @@ const App = () => {
       </div>
       {selectedCardDetail && <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />}
       {effectMessage && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'white', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
+        <div style={{ position: 'fixed', top: '20px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'white', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
           {effectMessage}
         </div>
       )}
