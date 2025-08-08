@@ -265,10 +265,8 @@ io.on('connection', (socket) => {
               io.to(socket.id).emit('effect_triggered', `You tried to draw a card from ${card.name}'s effect, but your deck is empty!`);
               console.log(`[Server] Player ${socket.id} tried to draw, but deck is empty for effect.`);
             }
-          }
-          // 他の効果があればここに追加
-        } 
-        else if (card.effect === "Deal 2 damage to opponent creature") {
+          } 
+          else if (card.effect === "Deal 2 damage to opponent creature") {
             // Inform client to select a target
             io.to(socket.id).emit('request_target_for_effect', {
               type: 'deal_damage',
@@ -279,6 +277,7 @@ io.on('connection', (socket) => {
             console.log(`[Server] Player ${socket.id} played ${card.name}, requesting target for 2 damage.`);
           }
           // 他の効果があればここに追加
+        }
 
       } else {
         console.log(`[Server] Player ${socket.id} tried to play card ${card.value}, but not enough mana. Cost: ${card.manaCost}, Current: ${players[socket.id].currentMana}`);
