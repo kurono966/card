@@ -8,6 +8,7 @@ import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
 import Menu from './components/Menu'; // Menuコンポーネントをインポート
+import styles from './App.module.css';
 
 
 
@@ -686,7 +687,7 @@ const App = () => {
           </div>
 
           {/* Your Area */}
-          <div className={styles.yourArea}>
+          <div className="flex flex-col items-center justify-center w-1/2 p-4 bg-gray-700 rounded-lg shadow-lg mt-8">
             <h3>Your Area</h3>
             <p>Your Life: {yourLife}</p>
             <h4>Your Played Cards:</h4>
@@ -728,12 +729,12 @@ const App = () => {
               </div>
 
               <div className="flex flex-col items-center justify-center w-full mt-4">
+                <div className="flex flex-col items-center justify-center w-full mt-4">
                 <h3>Your Hand:</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-600 rounded-md min-h-[100px]">
                   {playerHand.map(card =>
                     <Card
-                      key={card.id}
-                      {...card}
+                      key={card.id} {...card}
                       onCardAction={handleCardAction}
                       isPlayed={false}
                       isTapped={false}
@@ -745,16 +746,17 @@ const App = () => {
                   )}
                 </div>
               </div>
+              </div>
             </div>
 
-            <div className={styles.deckEndTurnContainer}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="flex flex-col items-center justify-center w-full mt-4">
+              <div className="flex items-center gap-5">
                 <Deck />
               </div>
               <p>Your Deck Size: {playerDeckSize}</p>
               <button
                 onClick={handleNextPhase}
-                className={styles.endTurnButton}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
                 disabled={!isYourTurn && currentPhase !== 'declare_blockers' || isYourTurn && currentPhase === 'declare_blockers'}>
                 {currentPhase === 'declare_attackers' ? 'Declare Attack' :
                  (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
