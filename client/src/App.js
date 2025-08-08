@@ -6,6 +6,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import Card from './components/Card';
 import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
+import Graveyard from './components/Graveyard';
 
 import styles from './App.module.css';
 
@@ -82,8 +83,10 @@ const ItemTypes = {
 
 const App = () => {
   const [message, setMessage] = useState('Loading game...');
-  const [yourHand, setYourHand] = useState([]);
-  const [yourDeckSize, setYourDeckSize] = useState(0);
+  const [playerHand, setPlayerHand] = useState([]);
+  const [opponentHand, setOpponentHand] = useState([]);
+  const [playerGraveyard, setPlayerGraveyard] = useState([]);
+  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
   const [yourPlayedCards, setYourPlayedCards] = useState([]);
   const [yourManaZone, setYourManaZone] = useState([]);
   const [yourMaxMana, setYourMaxMana] = useState(0);
@@ -154,6 +157,14 @@ const App = () => {
       setOpponentCurrentMana(state.opponentCurrentMana);
       setOpponentLife(state.opponentLife);
 
+      // Update graveyards if they exist in the state
+      if (state.yourGraveyard) {
+        setPlayerGraveyard(state.yourGraveyard);
+      }
+      if (state.opponentGraveyard) {
+        setOpponentGraveyard(state.opponentGraveyard);
+      }
+
       setIsYourTurn(state.isYourTurn);
       setCurrentPhase(state.currentPhase);
       setAttackingCreatures(state.attackingCreatures || []);
@@ -221,6 +232,25 @@ const App = () => {
       setSelectedCardDetail(card);
     } else if (actionType === 'leave') {
       setSelectedCardDetail(null);
+    } else if (actionType === 'toGraveyard') {
+      // Handle moving a card to the graveyard
+      if (yourPlayedCards.some(c => c.id === card.id)) {
+        // Move from your field to your graveyard
+        setPlayerGraveyard(prev => [...prev, card]);
+        setYourPlayedCards(prev => prev.filter(c => c.id !== card.id));
+      } else if (opponentPlayedCards.some(c => c.id === card.id)) {
+        // Move from opponent's field to their graveyard
+        setOpponentGraveyard(prev => [...prev, card]);
+        setOpponentPlayedCards(prev => prev.filter(c => c.id !== card.id));
+      } else if (yourHand.some(c => c.id === card.id)) {
+        // Move from your hand to your graveyard
+        setPlayerGraveyard(prev => [...prev, card]);
+        setYourHand(prev => prev.filter(c => c.id !== card.id));
+      } else if (yourManaZone.some(c => c.id === card.id)) {
+        // Move from your mana zone to your graveyard
+        setPlayerGraveyard(prev => [...prev, card]);
+        setYourManaZone(prev => prev.filter(c => c.id !== card.id));
+      }
     } else if (actionType === 'click') {
       // --- Effect Targeting Logic ---
       if (isTargetingEffectRef.current) {
@@ -410,7 +440,19 @@ const App = () => {
             </div>
 
             <div className={styles.deckEndTurnContainer}>
-              <Deck />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <Graveyard 
+                  cards={opponentGraveyard} 
+                  onCardAction={handleCardAction} 
+                  isOpponent={true} 
+                />
+                <Deck />
+                <Graveyard 
+                  cards={playerGraveyard} 
+                  onCardAction={handleCardAction} 
+                  isOpponent={false} 
+                />
+              </div>
               <p>Your Deck Size: {yourDeckSize}</p>
               <button 
                 onClick={handleNextPhase} 
