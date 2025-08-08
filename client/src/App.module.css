@@ -33,7 +33,7 @@
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
   border: 2px solid #44475a; /* ボーダー色を調整 */
-  padding: 0.5rem; /* パディングを維持 */
+  padding: 0.5vh; /* パディングを維持 */
   border-radius: 10px;
   box-sizing: border-box;
   background-color: #282a36; /* ゲームエリアの背景色 */
@@ -43,7 +43,7 @@
 .opponentArea,
 .yourArea {
   border: 1px solid;
-  padding: 0.5rem;
+  padding: 0.5vh;
   display: flex;
   flex-direction: column;
   width: 100%; /* 幅を100%に */
@@ -66,7 +66,7 @@
 
 /* 自分のエリア内のレイアウト調整 */
 .yourArea h3, .yourArea p, .yourArea h4 {
-  margin-bottom: 0.2rem; /* 各見出しと段落の下マージンを調整 */
+  margin-bottom: 0.2vh; /* 各見出しと段落の下マージンを調整 */
 }
 
 .manaHandContainer {
@@ -75,7 +75,7 @@
   flex-grow: 1; /* 残りのスペースを埋める */
   justify-content: flex-start; /* 左寄せ */
   align-items: flex-start;
-  margin-top: 0.5rem;
+  margin-top: 0.5vh;
 }
 
 .manaZoneContainer {
@@ -96,7 +96,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.5vh;
   gap: 1rem; /* 要素間のスペース */
 }
 
@@ -105,8 +105,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  padding: 0.2rem;
-  margin-bottom: 0.5rem;
+  padding: 0.2vh;
+  margin-bottom: 0.5vh;
   border-radius: 5px;
   box-sizing: border-box;
   background-color: #44475a; /* ゾーンの背景色 */
@@ -114,7 +114,7 @@
 }
 
 .manaZone {
-  min-height: 7.5vw; /* カードの高さに合わせて調整 */
+  min-height: 7.5vh; /* カードの高さに合わせて調整 */
   max-height: 10vh; /* マナゾーンの最大高さを設定 */
   overflow-y: auto; /* 必要に応じてスクロール */
   border: 1px dashed #bd93f9; /* 紫系 */
@@ -126,7 +126,6 @@
 }
 
 .playedCardsArea {
-  min-height: 8rem;
   border: 1px dashed #ff79c6; /* ピンク系 */
   flex-grow: 1; /* 残りのスペースを埋める */
   overflow-y: auto; /* 必要に応じてスクロール */
@@ -145,8 +144,8 @@
 }
 
 .endTurnButton {
-  padding: 0.5rem 1rem;
-  margin-top: 0.5rem;
+  padding: 0.5vh 1rem;
+  margin-top: 0.5vh;
   background-color: #bd93f9; /* 紫系 */
   color: white;
   border: none;
@@ -190,13 +189,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  padding: 0.2rem;
-  margin-bottom: 0.5rem;
+  padding: 0.2vh;
+  margin-bottom: 0.5vh;
   border-radius: 5px;
   box-sizing: border-box;
   background-color: #44475a; /* ゾーンの背景色 */
   flex-shrink: 0;
-  min-height: 7.5vw; /* カードの高さに合わせて調整 */
+  min-height: 7.5vh; /* カードの高さに合わせて調整 */
   max-height: 10vh; /* マナゾーンの最大高さを設定 */
   overflow-y: auto; /* 必要に応じてスクロール */
   border: 1px dashed #ffb86c; /* オレンジ系 */
