@@ -11,7 +11,7 @@ git commit -m "%commitMessage%"
 
 echo.
 echo Pushing changes to remote repository...
-git push
+git push origin master
 
 echo.
 echo Git operations complete.
