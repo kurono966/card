@@ -1,31 +1,5 @@
-html, body, #root {
-  margin: 0;
-  padding: 0;
-  height: 100%; /* html, body, #root も高さ100%にする */
-  /* overflow: hidden; を削除 */
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a2e; /* 全体の背景色を濃い青紫系に */
-  color: #e0e0e0; /* 全体の文字色を明るいグレーに */
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* 基本的なリセット */
-* {
-  box-sizing: border-box;
-}
-
-h1, h2, h3, h4, p {
-  margin: 0;
-  padding: 0;
-}
+/* 既存のグローバルスタイルがあればここに追加 */
