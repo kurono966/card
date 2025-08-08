@@ -443,10 +443,7 @@ io.on('connection', (socket) => {
     const currentSocketId = playerOrder[currentPlayerIndex];
     players[currentSocketId].isTurn = false; // 現在のプレイヤーのターンを終了
 
-    // ターン終了時に自分のフィールドのカードをすべてアンタップする
-    players[currentSocketId].played.forEach(card => {
-      card.isTapped = false;
-    });
+    
 
     currentPlayerIndex = (currentPlayerIndex + 1) % playerOrder.length; // 次のプレイヤーへ
     const nextPlayerId = playerOrder[currentPlayerIndex];
@@ -457,6 +454,11 @@ io.on('connection', (socket) => {
         players[nextPlayerId].currentMana = players[nextPlayerId].maxMana; // 次のプレイヤーのマナを回復
         players[nextPlayerId].manaPlayedThisTurn = false; // 次のターンのマナプレイフラグをリセット
         players[nextPlayerId].drawnThisTurn = false; // 次のターンのドローフラグをリセット
+
+        // ターン開始時に自分のフィールドのカードをすべてアンタップする
+        players[nextPlayerId].played.forEach(card => {
+          card.isTapped = false;
+        });
 
         // Allow all creatures to attack
         players[nextPlayerId].played.forEach(card => {
