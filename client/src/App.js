@@ -49,6 +49,8 @@ const App = () => {
   const [effectSourceCardId, setEffectSourceCardId] = useState(null);
   const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
 
+  const [requestTargetForEffect, setRequestTargetForEffect] = useState(null); // New state for target selection
+
   const isYourTurnRef = useRef(isYourTurn);
   useEffect(() => {
     isYourTurnRef.current = isYourTurn;
@@ -105,10 +107,11 @@ const App = () => {
     });
 
     // New listener for effect targeting
-    socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
+    socket.on('request_target_for_effect', (data) => {
       setIsTargetingEffect(true);
-      setEffectSourceCardId(sourceCardId);
-      setEffectMessageForTarget(message);
+      setEffectSourceCardId(data.sourceCardId);
+      setEffectMessageForTarget(data.message);
+      setRequestTargetForEffect(data); // Store the full data for later use
       // Optionally, highlight potential targets here if needed
     });
 
@@ -143,6 +146,22 @@ const App = () => {
     }
   };
 
+  // New function to handle target selection
+  const handleSelectTarget = (targetId) => {
+    if (requestTargetForEffect) {
+      socket.emit('select_target_for_effect', {
+        targetId: targetId,
+        sourceCardId: requestTargetForEffect.sourceCardId,
+        effectType: requestTargetForEffect.type,
+        amount: requestTargetForEffect.amount,
+      });
+      setIsTargetingEffect(false);
+      setEffectSourceCardId(null);
+      setEffectMessageForTarget(null);
+      setRequestTargetForEffect(null); // Reset target selection state
+    }
+  };
+
   const handleCardAction = (card, actionType) => {
     if (actionType === 'hover') {
       setSelectedCardDetail(card);
@@ -154,15 +173,7 @@ const App = () => {
         // Only allow targeting opponent's played creatures
         const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
         if (targetCreature) {
-          socket.emit('resolve_effect_target', {
-            sourceCardId: effectSourceCardId,
-            targetCardId: card.id,
-            effectType: 'deal_damage', // Assuming this is the only effect type for now
-            amount: 2 // Assuming 2 damage for now
-          });
-          setIsTargetingEffect(false);
-          setEffectSourceCardId(null);
-          setEffectMessageForTarget(null);
+          handleSelectTarget(card.id); // Use the new handler
         } else {
           console.log('Invalid target for effect: Not an opponent creature.');
         }
@@ -296,6 +307,23 @@ const App = () => {
           </div>
         </div>
       </div>
+      {/* Target Selection Overlay */}
+      {isTargetingEffect && requestTargetForEffect && (
+        <div className={styles.targetSelectionOverlay}>
+          <h2>{effectMessageForTarget}</h2>
+          <div className={styles.opponentFieldForTargeting}>
+            {opponentPlayedCards.map((card) => (
+              <div
+                key={card.id}
+                className={styles.targetableCard}
+                onClick={() => handleSelectTarget(card.id)}
+              >
+                <Card card={card} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {selectedCardDetail && (
         <div style={{
           position: 'fixed',
