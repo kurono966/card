@@ -350,9 +350,14 @@ const App = () => {
         <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
 
         <div className={styles.gameArea}>
-          {/* Opponent's Area - Point-symmetrical to player's area */}
+          {/* Opponent's Area */}
           <div className={styles.opponentArea}>
+            <h3>Opponent's Area</h3>
+            <p>Opponent's Life: {opponentLife}</p>
+            <p>Opponent's Deck Size: {opponentDeckSize}</p>
+            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             <div className={styles.opponentFieldManaContainer}>
+              <h4>Opponent's Played Cards:</h4>
               <div className={styles.playedCardsArea}>
                 {opponentPlayedCards.map(card => (
                   <Card
@@ -368,52 +373,23 @@ const App = () => {
                   />
                 ))}
               </div>
-              <div className={styles.manaZoneContainer}>
-                <h4>Mana Zone</h4>
+              <div className={styles.opponentManaZoneContainer}>
+                <h4>Opponent's Mana Zone:</h4>
                 <div className={styles.manaZone}>
                   {opponentManaZone.length > 0 ? (
-                    opponentManaZone.map(card => 
-                      <Card 
-                        key={card.id} 
-                        {...card} 
-                        onCardAction={handleCardAction} 
-                        isPlayed={false} 
-                        isTapped={false} 
-                        isAttacking={false} 
-                        isSelectedAttacker={false} 
-                        isSelectedBlocker={false} 
-                        isSelectedTarget={false} 
-                      />
-                    )
+                    opponentManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
                   ) : (
                     <p className={styles.emptyZoneText}>Empty</p>
                   )}
                 </div>
+                <div className={styles.graveyardContainer}>
+                  <Graveyard
+                    cards={opponentGraveyard}
+                    onCardAction={handleCardAction}
+                    isOpponent={true}
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className={styles.opponentHandContainer}>
-              <h4>Opponent's Hand</h4>
-              <div className={styles.handCards}>
-                {Array(opponentHand.length).fill().map((_, index) => (
-                  <div key={index} className={styles.cardBack}></div>
-                ))}
-              </div>
-            </div>
-            
-            <div className={styles.graveyardContainer}>
-              <Graveyard
-                cards={opponentGraveyard}
-                onCardAction={handleCardAction}
-                isOpponent={true}
-              />
-            </div>
-            
-            <div className={styles.opponentInfo}>
-              <h3>Opponent's Area</h3>
-              <p>Life: {opponentLife}</p>
-              <p>Deck: {opponentDeckSize}</p>
-              <p>Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
             </div>
           </div>
 
