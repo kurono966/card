@@ -103,6 +103,7 @@ function initializePlayerState(socketId) {
     hand: [],
     played: [],
     manaZone: [], // マナゾーン
+    graveyard: [], // 墓地ゾーン
     maxMana: 10, // 最大マナを0に初期化
     currentMana: 10, // 現在のマナ
     isTurn: false,
@@ -133,6 +134,7 @@ function emitFullGameState() {
       yourDeckSize: selfPlayer.deck.length,
       yourPlayedCards: selfPlayer.played,
       yourManaZone: selfPlayer.manaZone,
+      yourGraveyard: selfPlayer.graveyard,
       yourMaxMana: selfPlayer.maxMana,
       yourCurrentMana: selfPlayer.currentMana,
       isYourTurn: selfPlayer.isTurn,
@@ -317,8 +319,9 @@ io.on('connection', (socket) => {
 
       // Remove creature if defense drops to 0 or below
       if (targetCreature.defense <= 0) {
-        opponentPlayer.played = opponentPlayer.played.filter(card => card.id !== targetCardId);
-        console.log(`[Server] ${targetCreature.name} destroyed.`);
+        const destroyedCard = opponentPlayer.played.splice(targetCreatureIndex, 1)[0];
+        opponentPlayer.graveyard.push(destroyedCard);
+        console.log(`[Server] ${targetCreature.name} destroyed and moved to graveyard.`);
         io.to(playerId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
         io.to(opponentId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
       } else {
@@ -353,8 +356,9 @@ io.on('connection', (socket) => {
       console.log(`[Server] ${targetCard.name} took ${amount} damage. Remaining defense: ${targetCard.defense}`);
 
       if (targetCard.defense <= 0) {
-        opponentPlayer.played.splice(targetCardIndex, 1); // クリーチャーを破壊
-        console.log(`[Server] ${targetCard.name} was destroyed.`);
+        const destroyedCard = opponentPlayer.played.splice(targetCardIndex, 1)[0]; // クリーチャーを破壊
+        opponentPlayer.graveyard.push(destroyedCard);
+        console.log(`[Server] ${targetCard.name} was destroyed and moved to graveyard.`);
         io.to(socket.id).emit('effect_triggered', `${targetCard.name} was destroyed by your card's effect!`);
         io.to(opponentId).emit('effect_triggered', `${targetCard.name} was destroyed by opponent's card's effect!`);
       } else {
@@ -545,8 +549,23 @@ io.on('connection', (socket) => {
   }
 
   function cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates) {
-    attackerPlayer.played = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
-    opponentPlayer.played = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
+    // Destroyed creatures from attacker's side go to attacker's graveyard
+    attackerPlayer.played = attackerPlayer.played.filter(c => {
+      if (creatureStates[c.id] && creatureStates[c.id].defense <= 0) {
+        attackerPlayer.graveyard.push(c);
+        return false;
+      }
+      return true;
+    });
+
+    // Destroyed creatures from opponent's side go to opponent's graveyard
+    opponentPlayer.played = opponentPlayer.played.filter(c => {
+      if (creatureStates[c.id] && creatureStates[c.id].defense <= 0) {
+        opponentPlayer.graveyard.push(c);
+        return false;
+      }
+      return true;
+    });
   }
 
   function endCurrentTurnAndStartNext() {
