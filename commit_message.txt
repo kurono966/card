@@ -1,1 +1,1 @@
-feat: Implement MTG-like combat with tapping and untapping creatures.
+feat: Implement combat system

@@ -5,7 +5,6 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import Card from './components/Card';
 import Deck from './components/Deck';
-import Hand from './components/Hand';
 import CardDetail from './components/CardDetail';
 
 import styles from './App.module.css';
@@ -119,7 +118,12 @@ const App = () => {
       }
       socket.emit('next_phase');
     } else {
-      alert("It's not your turn!");
+        // Allow non-turn player to advance only from declare_blockers
+        if (currentPhase === 'declare_blockers') {
+            socket.emit('next_phase');
+        } else {
+            alert("It's not your turn!");
+        }
     }
   };
 
@@ -204,7 +208,10 @@ const App = () => {
                     key={card.id} {...card}
                     onCardAction={handleCardAction}
                     isPlayed={true}
+                    isTapped={card.isTapped || false}
                     isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
+                    isSelectedAttacker={false}
+                    isSelectedBlocker={false}
                     isSelectedTarget={selectedTarget === card.id}
                   />
                 ))}
@@ -212,7 +219,7 @@ const App = () => {
               <div className={styles.opponentManaZoneContainer}>
                 <h4>Opponent's Mana Zone:</h4>
                 <div className={styles.manaZone}>
-                  {opponentManaZone.map(card => <Card key={card.id} {...card} />)}
+                  {opponentManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)}
                 </div>
               </div>
             </div>
@@ -229,8 +236,11 @@ const App = () => {
                   key={card.id} {...card}
                   onCardAction={handleCardAction}
                   isPlayed={true}
+                  isTapped={card.isTapped || false}
+                  isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
                   isSelectedAttacker={selectedAttackers.has(card.id)}
                   isSelectedBlocker={selectedBlocker === card.id}
+                  isSelectedTarget={false}
                 />
               ))}
             </div>
@@ -240,14 +250,26 @@ const App = () => {
                 <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
                 <h4>Your Mana Zone:</h4>
                 <div ref={dropYourMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
-                  {yourManaZone.map(card => <Card key={card.id} {...card} />)}
+                  {yourManaZone.map(card => <Card key={card.id} {...card} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)}
                 </div>
               </div>
 
               <div className={styles.handContainer}>
                 <h3>Your Hand:</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                  {yourHand.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} />)}
+                  {yourHand.map(card => 
+                    <Card 
+                      key={card.id} 
+                      {...card} 
+                      onCardAction={handleCardAction} 
+                      isPlayed={false} 
+                      isTapped={false} 
+                      isAttacking={false} 
+                      isSelectedAttacker={false} 
+                      isSelectedBlocker={false} 
+                      isSelectedTarget={false} 
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -257,7 +279,7 @@ const App = () => {
               <p>Your Deck Size: {yourDeckSize}</p>
               <button onClick={handleNextPhase} className={styles.endTurnButton}>
                 {currentPhase === 'declare_attackers' ? 'Declare Attack' : 
-                 currentPhase === 'declare_blockers' ? 'Confirm Blocks' : 'Next Phase'}
+                 (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
               </button>
             </div>
           </div>

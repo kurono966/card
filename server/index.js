@@ -213,6 +213,7 @@ io.on('connection', (socket) => {
     } else if (playType === 'field') {
       if (players[socket.id].currentMana >= card.manaCost) {
         players[socket.id].currentMana -= card.manaCost;
+        card.canAttack = false; // Summoning sickness
         players[socket.id].played.push(card);
         console.log(`[Server] Player ${socket.id} played card ${card.value} to field. Current Mana: ${players[socket.id].currentMana}`);
 
@@ -246,46 +247,37 @@ io.on('connection', (socket) => {
 
   // フェーズ進行イベント
   socket.on('next_phase', () => {
-    if (!players[socket.id] || !players[socket.id].isTurn || !gameActive) {
-      console.log(`[Server] Player ${socket.id} tried to advance phase, but it's not their turn or game not active.`);
+    if (!players[socket.id] || !gameActive) { // Turn check removed to allow blocker to advance
+      console.log(`[Server] Player ${socket.id} tried to advance phase, but game not active.`);
       return;
     }
 
-    const attackerPlayer = players[socket.id];
-    const opponentId = playerOrder.find(id => id !== socket.id);
-    const opponentPlayer = players[opponentId];
+    const isCurrentPlayer = players[socket.id] && players[socket.id].isTurn;
 
     switch (currentPhase) {
       case GAME_PHASES.MAIN_PHASE_1:
-        currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
-        console.log(`[Server] Phase changed to ${currentPhase}`);
+        if(isCurrentPlayer) currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
         break;
       case GAME_PHASES.DECLARE_ATTACKERS:
-        // 攻撃クリーチャーが宣言された後、ブロックフェーズへ
-        currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
-        console.log(`[Server] Phase changed to ${currentPhase}`);
+        if(isCurrentPlayer) currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
         break;
       case GAME_PHASES.DECLARE_BLOCKERS:
-        // ブロッククリーチャーが宣言された後、戦闘ダメージフェーズへ
-        // ここで戦闘ダメージを解決する
+        // Non-turn player (blocker) can also trigger this
         console.log(`[Server] Resolving combat damage...`);
         resolveCombatDamage();
         currentPhase = GAME_PHASES.MAIN_PHASE_2;
-        console.log(`[Server] Phase changed to ${currentPhase}`);
         break;
       case GAME_PHASES.MAIN_PHASE_2:
-        currentPhase = GAME_PHASES.END_PHASE;
-        console.log(`[Server] Phase changed to ${currentPhase}`);
+        if(isCurrentPlayer) currentPhase = GAME_PHASES.END_PHASE;
         break;
       case GAME_PHASES.END_PHASE:
-        // ターン終了処理
-        endCurrentTurnAndStartNext();
-        console.log(`[Server] Phase changed to ${currentPhase}`);
+        if(isCurrentPlayer) endCurrentTurnAndStartNext();
         break;
       default:
         console.log(`[Server] Invalid phase transition from ${currentPhase}`);
         break;
     }
+    console.log(`[Server] Phase changed to ${currentPhase}`);
     emitFullGameState();
   });
 
@@ -299,11 +291,11 @@ io.on('connection', (socket) => {
     attackingCreatures = [];
     attackers.forEach(attackerId => {
       const attackerCard = players[socket.id].played.find(c => c.id === attackerId);
-      if (attackerCard && !attackerCard.isTapped) {
+      if (attackerCard && !attackerCard.isTapped && attackerCard.canAttack) {
         attackerCard.isTapped = true; // 攻撃クリーチャーをタップ
         attackingCreatures.push({ attackerId: attackerId, targetId: 'player' }); // デフォルトでプレイヤーを攻撃対象とする
       } else {
-        console.log(`[Server] Invalid attacker: ${attackerId} (not found or tapped).`);
+        console.log(`[Server] Invalid attacker: ${attackerId} (not found, tapped, or cannot attack this turn).`);
       }
     });
     console.log(`[Server] Declared attackers:`, attackingCreatures);
@@ -374,7 +366,8 @@ io.on('connection', (socket) => {
     // --- 3. プレイヤーへのダメージ ---
     attackingCreatures.forEach(attackInfo => {
       const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
-      if (attackerCard && !blockingAssignments[attackInfo.attackerId]) {
+      // Check if attacker is still on the board and unblocked
+      if (attackerCard && (!blockingAssignments[attackInfo.attackerId] || blockingAssignments[attackInfo.attackerId].length === 0)) {
         opponentPlayer.life -= attackerCard.attack;
         console.log(`[Server] Player ${opponentId} took ${attackerCard.attack} damage. Life: ${opponentPlayer.life}`);
         if (opponentPlayer.life <= 0) {
@@ -424,8 +417,8 @@ io.on('connection', (socket) => {
   }
 
   function cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates) {
-    attackerPlayer.played = attackerPlayer.played.filter(c => creatureStates[c.id].defense > 0);
-    opponentPlayer.played = opponentPlayer.played.filter(c => creatureStates[c.id].defense > 0);
+    attackerPlayer.played = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
+    opponentPlayer.played = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
   }
 
   function endCurrentTurnAndStartNext() {
@@ -446,6 +439,11 @@ io.on('connection', (socket) => {
         players[nextPlayerId].currentMana = players[nextPlayerId].maxMana; // 次のプレイヤーのマナを回復
         players[nextPlayerId].manaPlayedThisTurn = false; // 次のターンのマナプレイフラグをリセット
         players[nextPlayerId].drawnThisTurn = false; // 次のターンのドローフラグをリセット
+
+        // Allow all creatures to attack
+        players[nextPlayerId].played.forEach(card => {
+          card.canAttack = true;
+        });
 
         // ターン開始時の自動ドロー
         if (players[nextPlayerId].deck.length > 0) {
