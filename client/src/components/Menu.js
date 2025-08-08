@@ -39,7 +39,7 @@ const Menu = ({ onStartOnlineGame, onStartSoloGame }) => {
           onClick={handleSoloGame}
           disabled={isLoading}
         >
-          ソロモード
+          ソロモード (未実装)
         </button>
       </div>
       {statusMessage && <div className={styles.menuMessage}>{statusMessage}</div>}

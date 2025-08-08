@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Deck = ({ deckSize }) => {
+const Deck = () => {
   return (
     <div
       style={{
@@ -11,7 +11,6 @@ const Deck = ({ deckSize }) => {
         border: '2px dashed gray',
         borderRadius: '8px',
         display: 'flex',
-        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#3a3c4a', // デッキの背景色
@@ -20,8 +19,7 @@ const Deck = ({ deckSize }) => {
         boxShadow: '2px 2px 5px rgba(0,0,0,0.5)',
       }}
     >
-      <div>Deck</div>
-      <div>({deckSize})</div>
+      Deck
     </div>
   );
 };
