@@ -108,6 +108,7 @@ const App = () => {
 
     // New listener for effect targeting
     socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
+      console.log('[App.js] Received request_target_for_effect:', { type, amount, sourceCardId, message });
       setIsTargetingEffect(true);
       setEffectSourceCardId(sourceCardId);
       setEffectMessageForTarget(message);
@@ -155,9 +156,11 @@ const App = () => {
     } else if (actionType === 'click') {
       // --- Effect Targeting Logic ---
       if (isTargetingEffect) {
+        console.log('[App.js] Targeting effect active. Card clicked:', card);
         // Only allow targeting opponent's played creatures
         const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
         if (targetCreature) {
+          console.log('[App.js] Valid target selected:', targetCreature);
           socket.emit('resolve_effect_target', {
             sourceCardId: effectSourceCardId,
             targetCardId: card.id,
@@ -168,7 +171,7 @@ const App = () => {
           setEffectSourceCardId(null);
           setEffectMessageForTarget(null);
         } else {
-          console.log('Invalid target for effect: Not an opponent creature.');
+          console.log('Invalid target for effect: Not an opponent creature.', card);
         }
         return; // Prevent other click actions while targeting
       }
