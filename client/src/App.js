@@ -58,22 +58,7 @@ events.forEach(event => {
   });
 });
 
-// Handle connection established
-socket.on('connect', () => {
-  console.log('✅ Connected to server with ID:', socket.id);
-  console.log('Transport:', socket.io.engine.transport.name);
-  setMessage('接続されました。ゲームを開始します...');
-});
 
-// Handle connection errors
-socket.on('connect_error', (error) => {
-  console.error('❌ Connection failed:', error.message);
-  console.log('Socket details:', {
-    connected: socket.connected,
-    disconnected: socket.disconnected,
-    id: socket.id
-  });
-});
 
 const ItemTypes = {
   CARD: 'card',
@@ -84,6 +69,36 @@ const App = () => {
   const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
   const [message, setMessage] = useState('Neocardにようこそ！');
   const [socketConnected, setSocketConnected] = useState(false);
+
+  useEffect(() => {
+    // Set up event listeners when component mounts
+    const handleConnect = () => {
+      console.log('✅ Connected to server with ID:', socket.id);
+      console.log('Transport:', socket.io.engine.transport.name);
+      setMessage('接続されました。ゲームを開始します...');
+      setSocketConnected(true);
+    };
+
+    const handleConnectError = (error) => {
+      console.error('❌ Connection failed:', error.message);
+      console.log('Socket details:', {
+        connected: socket.connected,
+        disconnected: socket.disconnected,
+        id: socket.id
+      });
+      setMessage('接続に失敗しました。後でもう一度お試しください。');
+    };
+
+    // Add event listeners
+    socket.on('connect', handleConnect);
+    socket.on('connect_error', handleConnectError);
+
+    // Clean up event listeners on component unmount
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('connect_error', handleConnectError);
+    };
+  }, []);
   
   // Start game functions
   const startOnlineGame = () => {
