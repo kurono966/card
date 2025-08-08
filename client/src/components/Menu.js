@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styles from './Menu.module.css';
+import styles from '../App.module.css';
 
 const Menu = ({ onStartOnlineGame, onStartSoloGame }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,25 +24,25 @@ const Menu = ({ onStartOnlineGame, onStartSoloGame }) => {
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white">
-      <h1 className="text-5xl font-bold mb-8">Neocard</h1>
-      <div className="flex flex-col space-y-4">
+    <div className={styles.menuContainer}>
+      <h1 className={styles.menuTitle}>Neocard</h1>
+      <div className={styles.menuButtons}>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className={styles.menuButton}
           onClick={handleOnlineGame}
           disabled={isLoading}
         >
           オンラインマルチプレイ
         </button>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className={styles.menuButton}
           onClick={handleSoloGame}
           disabled={isLoading}
         >
           ソロモード (未実装)
         </button>
       </div>
-      {statusMessage && <div className="mt-8 text-lg font-semibold text-yellow-400">{statusMessage}</div>}
+      {statusMessage && <div className={styles.menuMessage}>{statusMessage}</div>}
     </div>
   );
 };

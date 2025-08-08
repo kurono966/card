@@ -3,7 +3,21 @@ import React from 'react';
 const Deck = () => {
   return (
     <div
-      className="w-[5vw] h-[7.5vw] min-w-[40px] min-h-[60px] border-2 border-dashed border-gray-500 rounded-lg flex justify-center items-center bg-[#3a3c4a] text-[#f8f8f2] text-sm shadow-md"
+      style={{
+        width: '5vw', // カードの幅に合わせる
+        height: '7.5vw', // カードの高さに合わせる
+        minWidth: '40px', // 最小幅
+        minHeight: '60px', // 最小高さ
+        border: '2px dashed gray',
+        borderRadius: '8px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#3a3c4a', // デッキの背景色
+        color: '#f8f8f2',
+        fontSize: '0.8rem',
+        boxShadow: '2px 2px 5px rgba(0,0,0,0.5)',
+      }}
     >
       Deck
     </div>

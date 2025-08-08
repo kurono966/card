@@ -5,27 +5,66 @@ const CardDetail = ({ card, onClose }) => {
 
   return (
     <div
-      className="bg-[#3a3c4a] border-2 border-[#8be9fd] rounded-lg p-5 z-50 shadow-2xl flex flex-col items-center text-[#f8f8f2]"
+      style={{
+        backgroundColor: '#3a3c4a',
+        border: '2px solid #8be9fd',
+        borderRadius: '10px',
+        padding: '20px',
+        zIndex: 1000,
+        boxShadow: '0 0 20px rgba(0,0,0,0.8)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        color: '#f8f8f2',
+      }}
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 bg-none border-none text-[#f8f8f2] text-2xl cursor-pointer"
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'none',
+          border: 'none',
+          color: '#f8f8f2',
+          fontSize: '1.5rem',
+          cursor: 'pointer',
+        }}
       >
         &times;
       </button>
-      <div        className={`w-[150px] h-[225px] border border-[#f8f8f2] rounded-md p-1 box-border flex flex-col justify-between items-center text-base ${card.imageUrl ? 'bg-cover bg-center bg-[url(${card.imageUrl})] text-white shadow-text' : 'text-black'}`}      >
-        <div className="text-base self-start">Cost: {card.manaCost}</div>
-        <div className="text-2xl font-bold">{card.value}</div>
-        <div className="text-base self-end"></div>
+      <div
+        style={{
+          width: '150px',
+          height: '225px',
+          border: '1px solid #f8f8f2',
+          borderRadius: '5px',
+          backgroundImage: card.imageUrl ? `url(${card.imageUrl})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '5px',
+          boxSizing: 'border-box',
+          fontSize: '1rem',
+          color: card.imageUrl ? 'white' : 'black',
+          textShadow: card.imageUrl ? '1px 1px 3px black' : 'none',
+        }}
+      >
+        <div style={{ fontSize: '1em', alignSelf: 'flex-start' }}>Cost: {card.manaCost}</div>
+        <div style={{ fontSize: '2em', fontWeight: 'bold' }}>{card.value}</div>
+        <div style={{ fontSize: '1em', alignSelf: 'flex-end' }}></div>
       </div>
-      <h3 className="mt-4">{card.name}</h3> {/* カード名称を表示 */}
+      <h3 style={{ marginTop: '15px' }}>{card.name}</h3> {/* カード名称を表示 */}
       <p>Mana Cost: {card.manaCost}</p>
-      <div className="flex justify-around w-full mt-2">
-        <span className="text-xl font-bold">⚔️{card.attack}</span>
-        <span className="text-xl font-bold">🛡️{card.defense}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', marginTop: '10px' }}>
+        <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>⚔️{card.attack}</span>
+        <span style={{ fontSize: '1.5em', fontWeight: 'bold' }}>🛡️{card.defense}</span>
       </div>
-      {card.effect && <p className="font-bold text-[#50fa7b]">Effect: {card.effect}</p>} {/* 効果があれば太字で表示 */}
-      {card.description && <p className="text-sm text-[#bd93f9]">{card.description}</p>} {/* 説明があれば薄めの色で表示 */}
+      {card.effect && <p style={{ fontWeight: 'bold', color: '#50fa7b' }}>Effect: {card.effect}</p>} {/* 効果があれば太字で表示 */}
+      {card.description && <p style={{ fontSize: '0.9em', color: '#bd93f9' }}>{card.description}</p>} {/* 説明があれば薄めの色で表示 */}
     </div>
   );
 };
