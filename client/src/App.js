@@ -83,7 +83,7 @@ const ItemTypes = {
 
 const App = () => {
   const [message, setMessage] = useState('Loading game...');
-  const [playerHand, setPlayerHand] = useState([]);
+  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
   const [opponentHand, setOpponentHand] = useState([]);
   const [playerGraveyard, setPlayerGraveyard] = useState([]);
   const [opponentGraveyard, setOpponentGraveyard] = useState([]);
@@ -92,6 +92,7 @@ const App = () => {
   const [yourMaxMana, setYourMaxMana] = useState(0);
   const [yourCurrentMana, setYourCurrentMana] = useState(0);
   const [yourLife, setYourLife] = useState(20);
+  const [playerDeckSize, setPlayerDeckSize] = useState(0);
 
   const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
   const [opponentManaZone, setOpponentManaZone] = useState([]);
@@ -142,8 +143,8 @@ const App = () => {
 
     socket.on('game_state', (state) => {
       console.log('[App.js] Received game state:', state);
-      setYourHand(state.yourHand || []);
-      setYourDeckSize(state.yourDeckSize);
+      setPlayerHand(state.yourHand || []);
+      setPlayerDeckSize(state.yourDeckSize);
       setYourPlayedCards(state.yourPlayedCards || []);
       setYourManaZone(state.yourManaZone || []);
       setYourMaxMana(state.yourMaxMana);
@@ -242,10 +243,10 @@ const App = () => {
         // Move from opponent's field to their graveyard
         setOpponentGraveyard(prev => [...prev, card]);
         setOpponentPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (yourHand.some(c => c.id === card.id)) {
+      } else if (playerHand.some(c => c.id === card.id)) {
         // Move from your hand to your graveyard
         setPlayerGraveyard(prev => [...prev, card]);
-        setYourHand(prev => prev.filter(c => c.id !== card.id));
+        setPlayerHand(prev => prev.filter(c => c.id !== card.id));
       } else if (yourManaZone.some(c => c.id === card.id)) {
         // Move from your mana zone to your graveyard
         setPlayerGraveyard(prev => [...prev, card]);
@@ -422,7 +423,7 @@ const App = () => {
               <div className={styles.handContainer}>
                 <h3>Your Hand:</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                  {yourHand.map(card => 
+                  {playerHand.map(card => 
                     <Card 
                       key={card.id} 
                       {...card} 
@@ -453,7 +454,7 @@ const App = () => {
                   isOpponent={false} 
                 />
               </div>
-              <p>Your Deck Size: {yourDeckSize}</p>
+              <p>Your Deck Size: {playerDeckSize}</p>
               <button 
                 onClick={handleNextPhase} 
                 className={styles.endTurnButton}
