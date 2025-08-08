@@ -8,9 +8,8 @@ import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
 import Menu from './components/Menu'; // Menuコンポーネントをインポート
+
 import styles from './App.module.css';
-
-
 
 // Determine the server URL based on the current environment
 const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -70,54 +69,6 @@ const App = () => {
   const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
   const [message, setMessage] = useState('Neocardにようこそ！');
   const [socketConnected, setSocketConnected] = useState(false);
-  
-  // NPC AI state
-  const [npcThinking, setNpcThinking] = useState(false);
-  const npcTimeoutRef = useRef(null);
-
-  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
-  const [opponentHand, setOpponentHand] = useState([]);
-  const [playerGraveyard, setPlayerGraveyard] = useState([]);
-  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
-  const [yourPlayedCards, setYourPlayedCards] = useState([]);
-  const [yourManaZone, setYourManaZone] = useState([]);
-  const [yourMaxMana, setYourMaxMana] = useState(0);
-  const [yourCurrentMana, setYourCurrentMana] = useState(0);
-  const [yourLife, setYourLife] = useState(20);
-  const [playerDeckSize, setPlayerDeckSize] = useState(0);
-
-  const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
-  const [opponentManaZone, setOpponentManaZone] = useState([]);
-  const [opponentDeckSize, setOpponentDeckSize] = useState(0);
-  const [opponentMaxMana, setOpponentMaxMana] = useState(0);
-  const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
-  const [opponentLife, setOpponentLife] = useState(20);
-
-  const [isYourTurn, setIsYourTurn] = useState(false);
-  const [selectedCardDetail, setSelectedCardDetail] = useState(null);
-  const [effectMessage, setEffectMessage] = useState(null);
-  const [currentPhase, setCurrentPhase] = useState('main_phase_1');
-  const [attackingCreatures, setAttackingCreatures] = useState([]);
-  const [blockingAssignments, setBlockingAssignments] = useState({});
-
-  // --- New states for UI interaction ---
-  const [selectedAttackers, setSelectedAttackers] = useState(new Map());
-  const [selectedBlocker, setSelectedBlocker] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
-  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
-
-  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
-  const isTargetingEffectRef = useRef(isTargetingEffect);
-  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
-  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
-  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
-  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
-
-  const isYourTurnRef = useRef(isYourTurn);
-
-  useEffect(() => {
-    isYourTurnRef.current = isYourTurn;
-  }, [isYourTurn]);
 
   useEffect(() => {
     // Set up event listeners when component mounts
@@ -174,114 +125,58 @@ const App = () => {
     });
   };
 
-  // NPC AI logic
-  const makeNPCDecision = () => {
-    if (!isYourTurn || gameMode !== 'solo' || npcThinking) return;
-    
-    setNpcThinking(true);
-    
-    // Simulate thinking time (1-2 seconds)
-    const thinkTime = 1000 + Math.random() * 1000;
-    
-    npcTimeoutRef.current = setTimeout(() => {
-      // Play cards if possible
-      if (opponentCurrentMana > 0 && opponentHand.length > 0) {
-        const playableCards = opponentHand.filter(card => card.cost <= opponentCurrentMana);
-        if (playableCards.length > 0) {
-          const cardToPlay = playableCards[Math.floor(Math.random() * playableCards.length)];
-          
-          // For simplicity, just play the first playable card
-          if (cardToPlay) {
-            // Move card from hand to play area
-            setOpponentHand(prev => prev.filter(c => c.id !== cardToPlay.id));
-            setOpponentPlayedCards(prev => [...prev, { ...cardToPlay, isTapped: false }]);
-            setOpponentCurrentMana(prev => prev - cardToPlay.cost);
-          }
-        }
-      }
-      
-      // If in attack phase, attack with untapped creatures
-      if (currentPhase === 'declare_attackers') {
-        const attackableCreatures = opponentPlayedCards.filter(card => !card.isTapped && card.canAttack);
-        if (attackableCreatures.length > 0) {
-          // Attack with all available creatures (simple AI)
-          const newAttackingCreatures = attackableCreatures.map(card => ({
-            attackerId: card.id,
-            target: 'player' // Always attack player directly in this simple AI
-          }));
-          
-          // Update UI to show attacking creatures
-          setAttackingCreatures(newAttackingCreatures);
-          
-          // Tap the attacking creatures
-          setOpponentPlayedCards(prev => 
-            prev.map(card => 
-              attackableCreatures.some(ac => ac.id === card.id) 
-                ? { ...card, isTapped: true } 
-                : card
-            )
-          );
-        }
-      }
-      
-      // End turn if no more actions
-      if (currentPhase !== 'declare_attackers' || opponentPlayedCards.every(card => card.isTapped || !card.canAttack)) {
-        handleEndTurn();
-      }
-      
-      setNpcThinking(false);
-    }, thinkTime);
-  };
-  
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (npcTimeoutRef.current) {
-        clearTimeout(npcTimeoutRef.current);
-      }
-    };
-  }, []);
-  
-  // Handle NPC turn
-  useEffect(() => {
-    if (gameMode === 'solo' && !isYourTurn && gameStarted) {
-      makeNPCDecision();
-    }
-  }, [isYourTurn, currentPhase, gameMode, gameStarted, makeNPCDecision]); // Added makeNPCDecision to dependencies
-  
   const startSoloGame = () => {
     console.log('Starting solo game...');
     setGameMode('solo');
     setMessage('ソロモードを準備中...');
-    
-    // Initialize game state for solo mode
-    setPlayerHand([
-      { id: 1, name: 'クリーチャー1', power: 2, toughness: 2, cost: 1 },
-      { id: 2, name: 'クリーチャー2', power: 3, toughness: 3, cost: 2 },
-      { id: 3, name: 'スペル1', cost: 1, type: 'spell' },
-    ]);
-    
-    setOpponentHand([
-      { id: 101, name: 'NPCクリーチャー1', power: 2, toughness: 2, cost: 1 },
-      { id: 102, name: 'NPCクリーチャー2', power: 3, toughness: 3, cost: 2 },
-    ]);
-    
-    setPlayerDeckSize(20);
-    setOpponentDeckSize(20);
-    setYourLife(20);
-    setOpponentLife(20);
-    setYourMaxMana(1);
-    setYourCurrentMana(1);
-    setOpponentMaxMana(1);
-    setOpponentCurrentMana(1);
-    
-    // Set first turn to player
-    setIsYourTurn(true);
-    setCurrentPhase('main_phase_1');
-    
-    setGameStarted(true);
-    setMessage('ソロモードでゲームを開始します。あなたのターンです。');
+    // Add solo game initialization here
+    setTimeout(() => {
+      setGameStarted(true);
+      setMessage('ソロモードでゲームを開始します');
+    }, 1000);
   };
+  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
+  const [opponentHand, setOpponentHand] = useState([]);
+  const [playerGraveyard, setPlayerGraveyard] = useState([]);
+  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
+  const [yourPlayedCards, setYourPlayedCards] = useState([]);
+  const [yourManaZone, setYourManaZone] = useState([]);
+  const [yourMaxMana, setYourMaxMana] = useState(0);
+  const [yourCurrentMana, setYourCurrentMana] = useState(0);
+  const [yourLife, setYourLife] = useState(20);
+  const [playerDeckSize, setPlayerDeckSize] = useState(0);
+
+  const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
+  const [opponentManaZone, setOpponentManaZone] = useState([]);
+  const [opponentDeckSize, setOpponentDeckSize] = useState(0);
+  const [opponentMaxMana, setOpponentMaxMana] = useState(0);
+  const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
+  const [opponentLife, setOpponentLife] = useState(20);
+
+  const [isYourTurn, setIsYourTurn] = useState(false);
+  const [selectedCardDetail, setSelectedCardDetail] = useState(null);
+  const [effectMessage, setEffectMessage] = useState(null);
+  const [currentPhase, setCurrentPhase] = useState('main_phase_1');
+  const [attackingCreatures, setAttackingCreatures] = useState([]);
+  const [blockingAssignments, setBlockingAssignments] = useState({});
+
+  // --- New states for UI interaction ---
+  const [selectedAttackers, setSelectedAttackers] = useState(new Map());
+  const [selectedBlocker, setSelectedBlocker] = useState(null);
+  const [selectedTarget, setSelectedTarget] = useState(null);
+  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const isTargetingEffectRef = useRef(isTargetingEffect);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
+  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
+
+  const isYourTurnRef = useRef(isYourTurn);
+  useEffect(() => {
+    isYourTurnRef.current = isYourTurn;
+  }, [isYourTurn]);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -362,84 +257,25 @@ const App = () => {
       socket.off('effect_triggered');
       socket.off('request_target_for_effect'); // Clean up new listener
     };
-  }, [currentPhase]); // Added currentPhase to dependencies
-
-  const handleEndTurn = () => {
-    if (gameMode === 'online') {
-      if (isYourTurn) {
-        socket.emit('end_turn');
-      }
-    } else if (gameMode === 'solo') {
-      // In solo mode, just toggle the turn
-      const nextTurn = !isYourTurn;
-      setIsYourTurn(nextTurn);
-      
-      // Reset mana and increase max mana at the start of each turn
-      if (nextTurn) {
-        // Player's turn is starting
-        setYourCurrentMana(yourMaxMana + 1);
-        setYourMaxMana(prev => prev + 1);
-        setMessage('あなたのターンです');
-        
-        // Untap all player's cards
-        setYourPlayedCards(prev => 
-          prev.map(card => ({
-            ...card,
-            isTapped: false,
-            canAttack: true // Reset attack status
-          }))
-        );
-      } else {
-        // Opponent's turn is starting
-        setOpponentCurrentMana(opponentMaxMana + 1);
-        setOpponentMaxMana(prev => prev + 1);
-        setMessage('相手のターンです');
-        
-        // Let the NPC take its turn
-        makeNPCDecision();
-      }
-      
-      // Reset phase to main phase 1
-      setCurrentPhase('main_phase_1');
-      setAttackingCreatures([]);
-      setBlockingAssignments({});
-      setSelectedAttackers(new Map());
-    }
-  };
+  }, []); // Add empty dependency array and closing bracket
 
   const handleNextPhase = () => {
-    if (gameMode === 'online') {
-      // 自分のターンかどうかで処理を分岐
-      if (isYourTurnRef.current) {
-        // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
-        if (currentPhase === 'declare_attackers') {
-          const attackerIds = Array.from(selectedAttackers.keys());
-          socket.emit('declare_attackers', attackerIds);
-          socket.emit('next_phase'); // サーバーにフェーズ進行を要求
-        } else if (currentPhase !== 'declare_blockers') {
-          // ブロック宣言フェイズ以外なら、単純にフェーズを進める
-          socket.emit('next_phase');
-        }
-      } else {
-        // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
-        if (currentPhase === 'declare_blockers') {
-          socket.emit('declare_blockers', blockingAssignments);
-          socket.emit('next_phase');
-        }
+    // 自分のターンかどうかで処理を分岐
+    if (isYourTurnRef.current) {
+      // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
+      if (currentPhase === 'declare_attackers') {
+        const attackerIds = Array.from(selectedAttackers.keys());
+        socket.emit('declare_attackers', attackerIds);
+        socket.emit('next_phase'); // サーバーにフェーズ進行を要求
+      } else if (currentPhase !== 'declare_blockers') {
+        // ブロック宣言フェイズ以外なら、単純にフェーズを進める
+        socket.emit('next_phase');
       }
-    } else if (gameMode === 'solo') {
-      // In solo mode, handle phase changes locally
-      const phases = ['main_phase_1', 'declare_attackers', 'declare_blockers', 'main_phase_2', 'end_phase'];
-      const currentIndex = phases.indexOf(currentPhase);
-      if (currentIndex < phases.length - 1) {
-        const nextPhase = phases[currentIndex + 1];
-        setCurrentPhase(nextPhase);
-        
-        // If moving to end phase, automatically end turn
-        if (nextPhase === 'end_phase') {
-          // Small delay before ending turn
-          setTimeout(handleEndTurn, 1000);
-        }
+    } else {
+      // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
+      if (currentPhase === 'declare_blockers') {
+        socket.emit('declare_blockers', blockingAssignments);
+        socket.emit('next_phase');
       }
     }
   };
@@ -449,70 +285,6 @@ const App = () => {
       setSelectedCardDetail(card);
     } else if (actionType === 'leave') {
       setSelectedCardDetail(null);
-    } else if (actionType === 'click' && gameMode === 'solo' && isYourTurn) {
-      // Handle card plays in solo mode
-      if ((currentPhase === 'main_phase_1' || currentPhase === 'main_phase_2') && 
-          playerHand.some(c => c.id === card.id) && 
-          card.cost <= yourCurrentMana) {
-        // Play a card from hand
-        setPlayerHand(prev => prev.filter(c => c.id !== card.id));
-        
-        if (card.type === 'spell') {
-          // Handle spell effects here if needed
-          setYourCurrentMana(prev => prev - card.cost);
-          // For now, just move spell to graveyard
-          setPlayerGraveyard(prev => [...prev, card]);
-        } else {
-          // It's a creature
-          setYourPlayedCards(prev => [
-            ...prev, 
-            { ...card, isTapped: false, canAttack: false }
-          ]);
-          setYourCurrentMana(prev => prev - card.cost);
-        }
-        return;
-      }
-      
-      // Handle attacking in solo mode
-      if (currentPhase === 'declare_attackers' && isYourTurn) {
-        const myCard = yourPlayedCards.find(c => c.id === card.id);
-        if (myCard && !myCard.isTapped && myCard.canAttack) {
-          const newSelectedAttackers = new Map(selectedAttackers);
-          if (newSelectedAttackers.has(card.id)) {
-            newSelectedAttackers.delete(card.id);
-          } else {
-            newSelectedAttackers.set(card.id, card);
-          }
-          setSelectedAttackers(newSelectedAttackers);
-        }
-        return;
-      }
-      
-      // Handle blocking in solo mode
-      if (currentPhase === 'declare_blockers' && !isYourTurn) {
-        const attacker = opponentPlayedCards.find(c => c.id === card.id);
-        const blocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
-        
-        if (attacker) {
-          setSelectedTarget(card.id);
-          setTempSelectedBlocker(null);
-        } else if (blocker && selectedTarget) {
-          // Assign this blocker to the selected attacker
-          const newAssignments = { ...blockingAssignments };
-          if (!newAssignments[selectedTarget]) {
-            newAssignments[selectedTarget] = [];
-          }
-          newAssignments[selectedTarget].push(card.id);
-          setBlockingAssignments(newAssignments);
-          setSelectedTarget(null);
-          
-          // Tap the blocking creature
-          setYourPlayedCards(prev => 
-            prev.map(c => c.id === card.id ? { ...c, isTapped: true } : c)
-          );
-        }
-        return;
-      }
     } else if (actionType === 'toGraveyard') {
       // Handle moving a card to the graveyard
       if (yourPlayedCards.some(c => c.id === card.id)) {
@@ -634,26 +406,26 @@ const App = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white">
+      <div className={styles.appContainer}>
         {gameMode === 'online' && (
-          <div className="text-center text-lg font-bold">
+          <div className={styles.connectionStatus}>
             {socket.connected ? 'オンライン接続中' : '接続中...'}
           </div>
         )}
-        <h1 className="text-2xl font-bold my-4">{message}</h1>
-        <h2 className="text-xl font-semibold mb-2">{isYourTurn ? 'Your Turn' : 'Opponent Turn'}</h2>
-        <h3 className="text-lg font-medium mb-4">Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
+        <h1 className={styles.messageHeader}>{message}</h1>
+        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
 
-        <div className="flex flex-grow w-full max-w-6xl p-4">
+        <div className={styles.gameArea}>
           {/* Opponent's Area */}
-          <div className="flex flex-col items-center justify-center w-1/2 p-4 bg-gray-700 rounded-lg shadow-lg">
+          <div className={styles.opponentArea}>
             <h3>Opponent's Area</h3>
             <p>Opponent's Life: {opponentLife}</p>
             <p>Opponent's Deck Size: {opponentDeckSize}</p>
             <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
-            <div className="flex flex-col items-center justify-center w-full">
+            <div className={styles.opponentFieldManaContainer}>
               <h4>Opponent's Played Cards:</h4>
-              <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-600 rounded-md min-h-[100px]">
+              <div className={styles.playedCardsArea}>
                 {opponentPlayedCards.map(card => (
                   <Card
                     key={card.id} {...card}
@@ -668,16 +440,16 @@ const App = () => {
                   />
                 ))}
               </div>
-              <div className="flex flex-col items-center justify-center w-full mt-4">
+              <div className={styles.opponentManaZoneContainer}>
                 <h4>Opponent's Mana Zone:</h4>
-                <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-600 rounded-md min-h-[100px]">
+                <div className={styles.manaZone}>
                   {opponentManaZone.length > 0 ? (
                     opponentManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
                   ) : (
-                    <p className="text-gray-400">Empty</p>
+                    <p className={styles.emptyZoneText}>Empty</p>
                   )}
                 </div>
-                <div className="flex flex-col items-center justify-center w-full mt-4">
+                <div className={styles.graveyardContainer}>
                   <Graveyard
                     cards={opponentGraveyard}
                     onCardAction={handleCardAction}
@@ -689,11 +461,11 @@ const App = () => {
           </div>
 
           {/* Your Area */}
-          <div className="flex flex-col items-center justify-center w-1/2 p-4 bg-gray-700 rounded-lg shadow-lg mt-8">
+          <div className={styles.yourArea}>
             <h3>Your Area</h3>
             <p>Your Life: {yourLife}</p>
             <h4>Your Played Cards:</h4>
-            <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-600 rounded-md min-h-[100px]">
+            <div ref={dropYourField} className={`${styles.playedCardsArea} ${isOverYourField ? styles.playedCardsAreaOver : ''}`}>
               {yourPlayedCards.map(card => (
                 <Card
                   key={card.id} {...card}
@@ -709,20 +481,20 @@ const App = () => {
               ))}
             </div>
 
-            <div className="flex flex-col items-center justify-center w-full mt-4">
-              <div className="flex flex-col items-center justify-center w-full">
+            <div className={styles.manaHandContainer}>
+              <div className={styles.manaZoneContainer}>
                 <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
                 <h4>Your Mana Zone:</h4>
                 <div ref={dropYourMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
                   {yourManaZone.length > 0 ? (
                     yourManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
                   ) : (
-                    <p className="text-gray-400">Empty</p>
+                    <p className={styles.emptyZoneText}>Empty</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full mt-4">
+              <div className={styles.graveyardContainer}>
                 <Graveyard
                   cards={playerGraveyard}
                   onCardAction={handleCardAction}
@@ -730,13 +502,13 @@ const App = () => {
                 />
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full mt-4">
-                <div className="flex flex-col items-center justify-center w-full mt-4">
+              <div className={styles.handContainer}>
                 <h3>Your Hand:</h3>
-                <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-600 rounded-md min-h-[100px]">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                   {playerHand.map(card =>
                     <Card
-                      key={card.id} {...card}
+                      key={card.id}
+                      {...card}
                       onCardAction={handleCardAction}
                       isPlayed={false}
                       isTapped={false}
@@ -748,17 +520,16 @@ const App = () => {
                   )}
                 </div>
               </div>
-              </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center w-full mt-4">
-              <div className="flex items-center gap-5">
+            <div className={styles.deckEndTurnContainer}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <Deck />
               </div>
               <p>Your Deck Size: {playerDeckSize}</p>
               <button
                 onClick={handleNextPhase}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
+                className={styles.endTurnButton}
                 disabled={!isYourTurn && currentPhase !== 'declare_blockers' || isYourTurn && currentPhase === 'declare_blockers'}>
                 {currentPhase === 'declare_attackers' ? 'Declare Attack' :
                  (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
