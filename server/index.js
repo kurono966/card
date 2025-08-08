@@ -487,8 +487,9 @@ io.on('connection', (socket) => {
         currentPhase = GAME_PHASES.MAIN_PHASE_1; // フェーズもリセット
     }
   }
-}
-);
+    }
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`[Server] Server is running on port ${PORT}`);
