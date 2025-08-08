@@ -157,6 +157,7 @@ const App = () => {
 
         if (opponentAttacker) {
           setSelectedTarget(card.id);
+          setSelectedBlocker(null); // 攻撃対象を選択したらブロッカー選択をリセット
         } else if (myBlocker) {
           setSelectedBlocker(card.id);
         }
@@ -172,7 +173,7 @@ const App = () => {
           setBlockingAssignments(newAssignments);
           socket.emit('declare_blockers', newAssignments); // Send updates immediately
           setSelectedTarget(null);
-          setSelectedBlocker(null);
+          setSelectedBlocker(null); // ブロック割り当て後、選択をリセット
         }
       }
     }
@@ -242,7 +243,7 @@ const App = () => {
                   isTapped={card.isTapped || false}
                   isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
                   isSelectedAttacker={selectedAttackers.has(card.id)}
-                  isSelectedBlocker={selectedBlocker === card.id}
+                  isSelectedBlocker={selectedBlocker === card.id} // ここを修正
                   isSelectedTarget={false}
                 />
               ))}
@@ -291,7 +292,17 @@ const App = () => {
           </div>
         </div>
       </div>
-      {selectedCardDetail && <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />}
+      {selectedCardDetail && (
+        <div style={{
+          position: 'fixed',
+          top: '20px', // 画面上部から20px
+          left: '20px', // 画面左部から20px
+          zIndex: 1000, // 他の要素より手前に表示
+          // その他のスタイルはCardDetailコンポーネント内で定義されているはず
+        }}>
+          <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />
+        </div>
+      )}
       {effectMessage && (
         <div style={{ position: 'fixed', top: '20px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'white', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
           {effectMessage}

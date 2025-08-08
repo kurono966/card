@@ -259,7 +259,15 @@ io.on('connection', (socket) => {
         if(isCurrentPlayer) currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
         break;
       case GAME_PHASES.DECLARE_ATTACKERS:
-        if(isCurrentPlayer) currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
+        if(isCurrentPlayer) {
+          if (attackingCreatures.length === 0) {
+            // 攻撃クリーチャーがいない場合、ブロックフェイズをスキップしてメインフェイズ2へ
+            currentPhase = GAME_PHASES.MAIN_PHASE_2;
+            console.log(`[Server] No attackers declared. Skipping DECLARE_BLOCKERS and moving to MAIN_PHASE_2.`);
+          } else {
+            currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
+          }
+        }
         break;
       case GAME_PHASES.DECLARE_BLOCKERS:
         // Non-turn player (blocker) can also trigger this
