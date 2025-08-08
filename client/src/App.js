@@ -17,39 +17,63 @@ const serverUrl = isLocalDevelopment
 
 console.log(`Connecting to ${isLocalDevelopment ? 'local' : 'remote'} server:`, serverUrl);
 
+// Initialize socket with autoConnect set to false
 const socket = io(serverUrl, {
-  // Connection options
   reconnection: true,
-  reconnectionAttempts: 10,  // Increased from 5 to 10
+  reconnectionAttempts: 10,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 10000,
-  timeout: 20000,  // Increased timeout to 20 seconds
+  timeout: 20000,
   withCredentials: true,
-  // Try polling first, then upgrade to websocket
+  // Try both transports
   transports: ['polling', 'websocket'],
-  // Disable auto-connect - we'll connect manually after setting up handlers
-  autoConnect: false
-});
-
-// Add connection event handlers
-socket.on('connect', () => {
-  console.log('Connected to server with ID:', socket.id);
-});
-
-socket.on('connect_error', (error) => {
-  console.error('Connection error:', error.message);
-  console.log('Attempting to reconnect...');
-});
-
-socket.on('disconnect', (reason) => {
-  console.log('Disconnected from server. Reason:', reason);
-  if (reason === 'io server disconnect') {
-    // The disconnection was initiated by the server, you need to reconnect manually
-    socket.connect();
+  // Don't connect automatically - we'll connect manually after setting up handlers
+  autoConnect: false,
+  // Add query parameters for debugging
+  query: {
+    clientType: 'web',
+    version: '1.0.0'
   }
 });
 
-// Manually connect after setting up all handlers
+// Add detailed logging for all events
+const events = [
+  'connect',
+  'connect_error',
+  'connect_timeout',
+  'reconnect',
+  'reconnect_attempt',
+  'reconnecting',
+  'reconnect_error',
+  'reconnect_failed',
+  'disconnect',
+  'error'
+];
+
+events.forEach(event => {
+  socket.on(event, (data) => {
+    console.log(`[Socket.io] ${event}`, data || '');
+  });
+});
+
+// Handle connection established
+socket.on('connect', () => {
+  console.log('✅ Connected to server with ID:', socket.id);
+  console.log('Transport:', socket.io.engine.transport.name); // in most cases, prints "polling" or "websocket"
+});
+
+// Handle connection errors
+socket.on('connect_error', (error) => {
+  console.error('❌ Connection failed:', error.message);
+  console.log('Socket details:', {
+    connected: socket.connected,
+    disconnected: socket.disconnected,
+    id: socket.id
+  });
+});
+
+// Start the connection manually
+console.log('Initiating connection to server...');
 socket.connect();
 
 const ItemTypes = {
@@ -87,6 +111,7 @@ const App = () => {
   const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
 
   const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const isTargetingEffectRef = useRef(isTargetingEffect);
   const [effectSourceCardId, setEffectSourceCardId] = useState(null);
   const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
   const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
@@ -151,6 +176,7 @@ const App = () => {
     socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
       console.log('[App.js] Received request_target_for_effect:', { type, amount, sourceCardId, message });
       setIsTargetingEffect(true);
+      isTargetingEffectRef.current = true; // Update ref immediately
       setEffectSourceCardId(sourceCardId);
       setEffectMessageForTarget(message);
       setEffectTypeForTarget(type);
@@ -196,7 +222,7 @@ const App = () => {
       setSelectedCardDetail(null);
     } else if (actionType === 'click') {
       // --- Effect Targeting Logic ---
-      if (isTargetingEffect) {
+      if (isTargetingEffectRef.current) {
         console.log('[App.js] Targeting effect active. Card clicked:', card);
         // Only allow targeting opponent's played creatures
         const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
@@ -209,6 +235,7 @@ const App = () => {
             amount: effectAmountForTarget,
           });
           setIsTargetingEffect(false);
+          isTargetingEffectRef.current = false; // Update ref immediately
           setEffectSourceCardId(null);
           setEffectMessageForTarget(null);
         } else {
@@ -301,9 +328,10 @@ const App = () => {
                     isPlayed={true}
                     isTapped={card.isTapped || false}
                     isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
-                                      isSelectedAttacker={false}
-                  isSelectedBlocker={false}
-                  isSelectedTarget={selectedTarget === card.id}
+                    isSelectedAttacker={false}
+                    isSelectedBlocker={false}
+                    isSelectedTarget={selectedTarget === card.id}
+                    isTargetableForEffect={isTargetingEffect && opponentPlayedCards.some(c => c.id === card.id)}
                   />
                 ))}
               </div>
@@ -402,6 +430,11 @@ const App = () => {
       {effectMessage && (
         <div style={{ position: 'fixed', top: '20px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'white', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
           {effectMessage}
+        </div>
+      )}
+      {isTargetingEffect && effectMessageForTarget && (
+        <div style={{ position: 'fixed', top: '80px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'yellow', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
+          {effectMessageForTarget}
         </div>
       )}
     </DndProvider>

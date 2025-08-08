@@ -8,7 +8,8 @@ const ItemTypes = {
 const Card = ({ 
   id, name, value, manaCost, imageUrl, effect, description, attack, defense, 
   onCardAction, isPlayed, isTapped, isAttacking, 
-  isSelectedAttacker, isSelectedBlocker, isSelectedTarget, isTempSelectedBlocker 
+  isSelectedAttacker, isSelectedBlocker, isSelectedTarget, isTempSelectedBlocker,
+  isTargetableForEffect // 新しいプロパティ
 }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
@@ -30,7 +31,8 @@ const Card = ({
     if (onCardAction) onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'click');
   };
 
-    const borderColor = isSelectedTarget ? '#ff5555' :      // ブロック対象の攻撃クリーチャー
+  const borderColor = isTargetableForEffect ? '#00ff00' : // ターゲット可能なカードは緑色
+                      isSelectedTarget ? '#ff5555' :      // ブロック対象の攻撃クリーチャー
                       (isTempSelectedBlocker && isSelectedTarget) ? '#50fa7b' : // 仮選択中のブロッカー (緑) - 攻撃対象が選択されている場合のみ
                       isSelectedAttacker ? '#f1fa8c' :  // 攻撃選択中の自分のクリーチャー
                       isSelectedBlocker ? '#50fa7b' :   // ブロック選択中の自分のクリーチャー

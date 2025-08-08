@@ -18,23 +18,47 @@ app.use(cors({
 const server = http.createServer(app);
 
 // Configure Socket.IO with CORS
+// Enhanced CORS configuration
 const io = socketIo(server, {
   cors: {
     origin: (origin, callback) => {
       const allowedOrigins = [
         "http://localhost:3000",
-        "http://localhost:3001",
+        "http://127.0.0.1:3000",
         "https://neocard-client.vercel.app",
       ];
-      // VercelのプレビューデプロイメントURL（例: https://neocard-client-*.vercel.app）を許可する
+      
+      console.log('Incoming connection from origin:', origin);
+      
       if (!origin || allowedOrigins.includes(origin) || /https:\/\/neocard-client-.*\.vercel\.app/.test(origin)) {
+        console.log('Origin allowed:', origin);
         callback(null, true);
       } else {
+        console.warn('Origin not allowed:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: ["GET", "POST"],
-  }
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["my-custom-header"],
+  },
+  // Additional Socket.IO options
+  pingTimeout: 30000,
+  pingInterval: 25000,
+  cookie: false
+});
+
+// Add connection logging
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('Client disconnected:', socket.id, 'Reason:', reason);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
