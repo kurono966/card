@@ -136,7 +136,8 @@ const App = () => {
       // --- Attack Phase Logic ---
       if (isYourTurn && currentPhase === 'declare_attackers') {
         const myCard = yourPlayedCards.find(c => c.id === card.id);
-        if (myCard && !myCard.isTapped) {
+        console.log('Card clicked to attack: ', myCard);
+        if (myCard && !myCard.isTapped && myCard.canAttack) {
           const newSelectedAttackers = new Map(selectedAttackers);
           if (newSelectedAttackers.has(card.id)) {
             newSelectedAttackers.delete(card.id);
