@@ -255,6 +255,41 @@ io.on('connection', (socket) => {
     emitFullGameState();
   });
 
+  // カード効果のターゲット解決イベント
+  socket.on('resolve_effect_target', ({ sourceCardId, targetCardId, effectType, amount }) => {
+    const currentPlayerSocketId = playerOrder[currentPlayerIndex];
+    const opponentPlayerId = playerOrder.find(id => id !== currentPlayerSocketId);
+    const opponentPlayer = players[opponentPlayerId];
+
+    if (!opponentPlayer) {
+      console.log(`[Server] Opponent player not found for effect target resolution.`);
+      return;
+    }
+
+    // Find the target creature
+    const targetCreatureIndex = opponentPlayer.played.findIndex(c => c.id === targetCardId);
+    if (targetCreatureIndex === -1) {
+      console.log(`[Server] Target creature ${targetCardId} not found on opponent's field.`);
+      return;
+    }
+
+    const targetCreature = opponentPlayer.played[targetCreatureIndex];
+
+    if (effectType === 'deal_damage') {
+      targetCreature.defense -= amount;
+      console.log(`[Server] Creature ${targetCreature.name} took ${amount} damage. Remaining defense: ${targetCreature.defense}`);
+
+      // Check if creature is destroyed
+      if (targetCreature.defense <= 0) {
+        opponentPlayer.played.splice(targetCreatureIndex, 1); // Remove from played cards
+        console.log(`[Server] Creature ${targetCreature.name} destroyed.`);
+      }
+    }
+    // Add other effect types here if needed
+
+    emitFullGameState(); // Update all clients with new game state
+  });
+
   // フェーズ進行イベント
   socket.on('next_phase', () => {
     if (!players[socket.id] || !gameActive) { // Turn check removed to allow blocker to advance
@@ -484,10 +519,6 @@ io.on('connection', (socket) => {
         players = {};
         currentPlayerIndex = 0;
         currentPhase = GAME_PHASES.MAIN_PHASE_1; // フェーズもリセット
-    }
-  }
-});
-
     }
   }
 });
