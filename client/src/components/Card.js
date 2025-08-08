@@ -8,7 +8,7 @@ const ItemTypes = {
 const Card = ({ 
   id, name, value, manaCost, imageUrl, effect, description, attack, defense, 
   onCardAction, isPlayed, isTapped, isAttacking, 
-  isSelectedAttacker, isSelectedBlocker, isSelectedTarget 
+  isSelectedAttacker, isSelectedBlocker, isSelectedTarget, isTempSelectedBlocker 
 }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
@@ -31,6 +31,7 @@ const Card = ({
   };
 
   const borderColor = isSelectedTarget ? '#ff5555' :      // ブロック対象の攻撃クリーチャー
+                      isTempSelectedBlocker ? '#ffff00' : // 仮選択中のブロッカー (黄色など)
                       isSelectedAttacker ? '#f1fa8c' :  // 攻撃選択中の自分のクリーチャー
                       isSelectedBlocker ? '#50fa7b' :   // ブロック選択中の自分のクリーチャー
                       isAttacking ? '#ffb86c' :         // 攻撃中のクリーチャー

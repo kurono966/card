@@ -43,6 +43,7 @@ const App = () => {
   const [selectedAttackers, setSelectedAttackers] = useState(new Map());
   const [selectedBlocker, setSelectedBlocker] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
+  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
 
   const isYourTurnRef = useRef(isYourTurn);
   useEffect(() => {
@@ -157,23 +158,27 @@ const App = () => {
 
         if (opponentAttacker) {
           setSelectedTarget(card.id);
-          setSelectedBlocker(null); // 攻撃対象を選択したらブロッカー選択をリセット
+          setTempSelectedBlocker(null); // 攻撃対象を選択したら仮ブロッカー選択をリセット
         } else if (myBlocker) {
-          setSelectedBlocker(card.id);
+          // 既に攻撃対象が選択されている場合のみ、ブロッカーを仮選択
+          if (selectedTarget) {
+            setTempSelectedBlocker(card.id);
+          }
         }
 
-        if (selectedTarget && myBlocker) {
+        // 攻撃対象と仮選択されたブロッカーの両方が存在する場合にブロックを確定
+        if (selectedTarget && tempSelectedBlocker) {
           const newAssignments = { ...blockingAssignments };
           if (!newAssignments[selectedTarget]) {
             newAssignments[selectedTarget] = [];
           }
-          if (!newAssignments[selectedTarget].includes(myBlocker.id)) {
-            newAssignments[selectedTarget].push(myBlocker.id);
+          if (!newAssignments[selectedTarget].includes(tempSelectedBlocker)) {
+            newAssignments[selectedTarget].push(tempSelectedBlocker);
           }
           setBlockingAssignments(newAssignments);
           socket.emit('declare_blockers', newAssignments); // Send updates immediately
           setSelectedTarget(null);
-          setSelectedBlocker(null); // ブロック割り当て後、選択をリセット
+          setTempSelectedBlocker(null); // ブロック割り当て後、仮選択をリセット
         }
       }
     }
@@ -243,7 +248,8 @@ const App = () => {
                   isTapped={card.isTapped || false}
                   isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
                   isSelectedAttacker={selectedAttackers.has(card.id)}
-                  isSelectedBlocker={selectedBlocker === card.id} // ここを修正
+                  isSelectedBlocker={blockingAssignments[selectedTarget] && blockingAssignments[selectedTarget].includes(card.id)} // 確定したブロッカー
+                  isTempSelectedBlocker={tempSelectedBlocker === card.id} // 仮選択中のブロッカー
                   isSelectedTarget={false}
                 />
               ))}
