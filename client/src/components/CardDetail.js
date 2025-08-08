@@ -26,6 +26,7 @@ const CardDetail = ({ card, onClose }) => {
       </div>
       {card.effect && <p className="font-bold text-[#50fa7b]">Effect: {card.effect}</p>} {/* 効果があれば太字で表示 */}
       {card.description && <p className="text-sm text-[#bd93f9]">{card.description}</p>} {/* 説明があれば薄めの色で表示 */}
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import styles from './Menu.module.css';
 
 const Menu = ({ onStartOnlineGame, onStartSoloGame }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -35,14 +35,14 @@ const Menu = ({ onStartOnlineGame, onStartSoloGame }) => {
           オンラインマルチプレイ
         </button>
         <button
-          className={styles.menuButton}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSoloGame}
           disabled={isLoading}
         >
           ソロモード (未実装)
         </button>
       </div>
-      {statusMessage && <div className={styles.menuMessage}>{statusMessage}</div>}
+      {statusMessage && <div className="mt-8 text-lg font-semibold text-yellow-400">{statusMessage}</div>}
     </div>
   );
 };
