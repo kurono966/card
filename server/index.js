@@ -103,7 +103,7 @@ function initializePlayerState(socketId) {
     hand: [],
     played: [],
     manaZone: [], // マナゾーン
-    graveyard: [], // 墓地ゾーン
+    graveyard: [], // 墓地を追加
     maxMana: 10, // 最大マナを0に初期化
     currentMana: 10, // 現在のマナ
     isTurn: false,
@@ -134,13 +134,14 @@ function emitFullGameState() {
       yourDeckSize: selfPlayer.deck.length,
       yourPlayedCards: selfPlayer.played,
       yourManaZone: selfPlayer.manaZone,
-      yourGraveyard: selfPlayer.graveyard,
+      yourGraveyard: selfPlayer.graveyard, // 自分の墓地を追加
       yourMaxMana: selfPlayer.maxMana,
       yourCurrentMana: selfPlayer.currentMana,
       isYourTurn: selfPlayer.isTurn,
       yourLife: selfPlayer.life, // 自分のライフを追加
       opponentPlayedCards: opponentPlayer ? opponentPlayer.played : [],
       opponentManaZone: opponentPlayer ? opponentPlayer.manaZone : [],
+      opponentGraveyard: opponentPlayer ? opponentPlayer.graveyard : [], // 相手の墓地を追加
       opponentDeckSize: opponentPlayer ? opponentPlayer.deck.length : 0,
       opponentMaxMana: opponentPlayer ? opponentPlayer.maxMana : 0,
       opponentCurrentMana: opponentPlayer ? opponentPlayer.currentMana : 0,
@@ -319,8 +320,8 @@ io.on('connection', (socket) => {
 
       // Remove creature if defense drops to 0 or below
       if (targetCreature.defense <= 0) {
-        const destroyedCard = opponentPlayer.played.splice(targetCreatureIndex, 1)[0];
-        opponentPlayer.graveyard.push(destroyedCard);
+        opponentPlayer.played = opponentPlayer.played.filter(card => card.id !== targetCardId);
+        opponentPlayer.graveyard.push(targetCreature); // 墓地へ送る
         console.log(`[Server] ${targetCreature.name} destroyed and moved to graveyard.`);
         io.to(playerId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
         io.to(opponentId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
@@ -356,9 +357,8 @@ io.on('connection', (socket) => {
       console.log(`[Server] ${targetCard.name} took ${amount} damage. Remaining defense: ${targetCard.defense}`);
 
       if (targetCard.defense <= 0) {
-        const destroyedCard = opponentPlayer.played.splice(targetCardIndex, 1)[0]; // クリーチャーを破壊
-        opponentPlayer.graveyard.push(destroyedCard);
-        console.log(`[Server] ${targetCard.name} was destroyed and moved to graveyard.`);
+        opponentPlayer.played.splice(targetCardIndex, 1); // クリーチャーを破壊
+        console.log(`[Server] ${targetCard.name} was destroyed.`);
         io.to(socket.id).emit('effect_triggered', `${targetCard.name} was destroyed by your card's effect!`);
         io.to(opponentId).emit('effect_triggered', `${targetCard.name} was destroyed by opponent's card's effect!`);
       } else {
@@ -549,23 +549,15 @@ io.on('connection', (socket) => {
   }
 
   function cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates) {
-    // Destroyed creatures from attacker's side go to attacker's graveyard
-    attackerPlayer.played = attackerPlayer.played.filter(c => {
-      if (creatureStates[c.id] && creatureStates[c.id].defense <= 0) {
-        attackerPlayer.graveyard.push(c);
-        return false;
-      }
-      return true;
-    });
+    // Destroyed creatures from attacker's side
+    const destroyedAttackerCreatures = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense <= 0);
+    destroyedAttackerCreatures.forEach(card => attackerPlayer.graveyard.push(card));
+    attackerPlayer.played = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
 
-    // Destroyed creatures from opponent's side go to opponent's graveyard
-    opponentPlayer.played = opponentPlayer.played.filter(c => {
-      if (creatureStates[c.id] && creatureStates[c.id].defense <= 0) {
-        opponentPlayer.graveyard.push(c);
-        return false;
-      }
-      return true;
-    });
+    // Destroyed creatures from opponent's side
+    const destroyedOpponentCreatures = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense <= 0);
+    destroyedOpponentCreatures.forEach(card => opponentPlayer.graveyard.push(card));
+    opponentPlayer.played = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
   }
 
   function endCurrentTurnAndStartNext() {

@@ -382,6 +382,13 @@ const App = () => {
                     <p className={styles.emptyZoneText}>Empty</p>
                   )}
                 </div>
+                <div className={styles.graveyardContainer}>
+                  <Graveyard
+                    cards={opponentGraveyard}
+                    onCardAction={handleCardAction}
+                    isOpponent={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -420,28 +427,28 @@ const App = () => {
                 </div>
               </div>
 
-              <div className={styles.graveyardContainer}> 
-                <Graveyard 
-                  cards={playerGraveyard} 
-                  onCardAction={handleCardAction} 
-                  isOpponent={false} 
+              <div className={styles.graveyardContainer}>
+                <Graveyard
+                  cards={playerGraveyard}
+                  onCardAction={handleCardAction}
+                  isOpponent={false}
                 />
-              </div> 
+              </div>
 
               <div className={styles.handContainer}>
                 <h3>Your Hand:</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                  {playerHand.map(card => 
-                    <Card 
-                      key={card.id} 
-                      {...card} 
-                      onCardAction={handleCardAction} 
-                      isPlayed={false} 
-                      isTapped={false} 
-                      isAttacking={false} 
-                      isSelectedAttacker={false} 
-                      isSelectedBlocker={false} 
-                      isSelectedTarget={false} 
+                  {playerHand.map(card =>
+                    <Card
+                      key={card.id}
+                      {...card}
+                      onCardAction={handleCardAction}
+                      isPlayed={false}
+                      isTapped={false}
+                      isAttacking={false}
+                      isSelectedAttacker={false}
+                      isSelectedBlocker={false}
+                      isSelectedTarget={false}
                     />
                   )}
                 </div>
@@ -450,19 +457,14 @@ const App = () => {
 
             <div className={styles.deckEndTurnContainer}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <Graveyard 
-                  cards={opponentGraveyard} 
-                  onCardAction={handleCardAction} 
-                  isOpponent={true} 
-                />
                 <Deck />
               </div>
               <p>Your Deck Size: {playerDeckSize}</p>
-              <button 
-                onClick={handleNextPhase} 
+              <button
+                onClick={handleNextPhase}
                 className={styles.endTurnButton}
                 disabled={!isYourTurn && currentPhase !== 'declare_blockers' || isYourTurn && currentPhase === 'declare_blockers'}>
-                {currentPhase === 'declare_attackers' ? 'Declare Attack' : 
+                {currentPhase === 'declare_attackers' ? 'Declare Attack' :
                  (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
               </button>
             </div>
