@@ -420,6 +420,14 @@ const App = () => {
                 </div>
               </div>
 
+              <div className={styles.graveyardContainer}> 
+                <Graveyard 
+                  cards={playerGraveyard} 
+                  onCardAction={handleCardAction} 
+                  isOpponent={false} 
+                />
+              </div> 
+
               <div className={styles.handContainer}>
                 <h3>Your Hand:</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
@@ -448,11 +456,6 @@ const App = () => {
                   isOpponent={true} 
                 />
                 <Deck />
-                <Graveyard 
-                  cards={playerGraveyard} 
-                  onCardAction={handleCardAction} 
-                  isOpponent={false} 
-                />
               </div>
               <p>Your Deck Size: {playerDeckSize}</p>
               <button 
