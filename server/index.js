@@ -68,8 +68,8 @@ function initializePlayerState(socketId) {
     hand: [],
     played: [],
     manaZone: [], // マナゾーン
-    maxMana: 0, // 最大マナを0に初期化
-    currentMana: 0, // 現在のマナ
+    maxMana: 10, // 最大マナを0に初期化
+    currentMana: 10, // 現在のマナ
     isTurn: false,
     manaPlayedThisTurn: false, // このターンにマナを置いたか
     drawnThisTurn: false, // このターンにドローしたか
@@ -254,6 +254,38 @@ io.on('connection', (socket) => {
       players[socket.id].hand.push(card); // 手札に戻す
     }
     emitFullGameState();
+  });
+
+  socket.on('resolve_effect_target', ({ sourceCardId, targetCardId, effectType, amount }) => {
+    const playerId = socket.id;
+    const opponentId = playerOrder.find(id => id !== playerId);
+
+    if (!opponentId) {
+      console.log(`[Server] No opponent found for ${playerId}`);
+      return;
+    }
+
+    const opponentPlayer = players[opponentId];
+    const targetCreature = opponentPlayer.played.find(card => card.id === targetCardId);
+
+    if (targetCreature && effectType === 'deal_damage') {
+      targetCreature.defense -= amount;
+      console.log(`[Server] ${targetCreature.name} took ${amount} damage. New defense: ${targetCreature.defense}`);
+
+      // Remove creature if defense drops to 0 or below
+      if (targetCreature.defense <= 0) {
+        opponentPlayer.played = opponentPlayer.played.filter(card => card.id !== targetCardId);
+        console.log(`[Server] ${targetCreature.name} destroyed.`);
+        io.to(playerId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
+        io.to(opponentId).emit('effect_triggered', `${targetCreature.name} was destroyed!`);
+      } else {
+        io.to(playerId).emit('effect_triggered', `${targetCreature.name} took ${amount} damage!`);
+        io.to(opponentId).emit('effect_triggered', `${targetCreature.name} took ${amount} damage!`);
+      }
+      emitFullGameState();
+    } else {
+      console.log(`[Server] Invalid target or effect type for resolve_effect_target. Target: ${targetCardId}, EffectType: ${effectType}`);
+    }
   });
 
   // ターゲット選択イベント (クライアントからターゲットが選択された後に受信)
