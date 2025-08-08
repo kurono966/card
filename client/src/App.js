@@ -120,6 +120,7 @@ const App = () => {
     } else {
         // Allow non-turn player to advance only from declare_blockers
         if (currentPhase === 'declare_blockers') {
+            socket.emit('declare_blockers', blockingAssignments); // ブロッカー情報を送信
             socket.emit('next_phase');
         } else {
             alert("It's not your turn!");
