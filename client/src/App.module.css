@@ -33,11 +33,104 @@
   width: 98vw; /* 画面幅の98%を使用 */
   margin: 0 auto;
   border: 2px solid #44475a; /* ボーダー色を調整 */
-  padding: 0.5vh; /* パディングを維持 */
-  border-radius: 10px;
-  box-sizing: border-box;
-  background-color: #282a36; /* ゲームエリアの背景色 */
-  box-shadow: 0 0 15px rgba(0,0,0,0.5); /* 全体に影を追加 */
+  padding: 0.5vh; /* Connection Status */
+}
+
+.connectionStatus {
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  padding: 5px 10px;
+  background-color: #50fa7b;
+  color: #282a36;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.connectionStatus:before {
+  content: '●';
+  display: inline-block;
+  margin-right: 5px;
+  color: #f1fa8c;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.menuContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e1e2e 0%, #282a36 100%);
+  color: #f8f8f2;
+  text-align: center;
+  padding: 20px;
+}
+
+.menuTitle {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: #bd93f9;
+  text-shadow: 0 0 10px rgba(189, 147, 249, 0.5);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.menuButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.menuButton {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #bd93f9 0%, #ff79c6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.menuButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.menuButton:active {
+  transform: translateY(1px);
+}
+
+.menuButton:disabled {
+  background: #44475a;
+  color: #6272a4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.menuMessage {
+  margin-top: 2rem;
+  color: #f1fa8c;
+  font-size: 1rem;
+  min-height: 24px;
 }
 
 .opponentArea,
@@ -197,7 +290,6 @@
   flex-shrink: 1;
   min-height: 7.5vh; /* カードの高さに合わせて調整 */
   max-height: 10vh; /* マナゾーンの最大高さを設定 */
-  overflow-y: auto; /* 必要に応じてスクロール */
   border: 1px dashed #ffb86c; /* オレンジ系 */
   align-content: flex-start;
   flex-grow: 1; /* 残りのスペースを埋める */

@@ -7,6 +7,7 @@ import Card from './components/Card';
 import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
+import Menu from './components/Menu'; // Menuコンポーネントをインポート
 
 import styles from './App.module.css';
 
@@ -60,7 +61,8 @@ events.forEach(event => {
 // Handle connection established
 socket.on('connect', () => {
   console.log('✅ Connected to server with ID:', socket.id);
-  console.log('Transport:', socket.io.engine.transport.name); // in most cases, prints "polling" or "websocket"
+  console.log('Transport:', socket.io.engine.transport.name);
+  setMessage('接続されました。ゲームを開始します...');
 });
 
 // Handle connection errors
@@ -73,16 +75,51 @@ socket.on('connect_error', (error) => {
   });
 });
 
-// Start the connection manually
-console.log('Initiating connection to server...');
-socket.connect();
-
 const ItemTypes = {
   CARD: 'card',
 };
 
 const App = () => {
-  const [message, setMessage] = useState('Loading game...');
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
+  const [message, setMessage] = useState('Neocardにようこそ！');
+  const [socketConnected, setSocketConnected] = useState(false);
+  
+  // Start game functions
+  const startOnlineGame = () => {
+    console.log('Starting online game...');
+    setGameMode('online');
+    setMessage('サーバーに接続中...');
+    
+    // Set up socket connection
+    socket.connect();
+    
+    // Set a timeout to handle connection issues
+    const connectionTimeout = setTimeout(() => {
+      if (!socket.connected) {
+        setMessage('サーバーに接続できませんでした。後でもう一度お試しください。');
+        setGameMode(null);
+      }
+    }, 10000); // 10 second timeout
+
+    // Clear timeout on successful connection
+    socket.once('connect', () => {
+      clearTimeout(connectionTimeout);
+      setSocketConnected(true);
+      setGameStarted(true);
+    });
+  };
+
+  const startSoloGame = () => {
+    console.log('Starting solo game...');
+    setGameMode('solo');
+    setMessage('ソロモードを準備中...');
+    // Add solo game initialization here
+    setTimeout(() => {
+      setGameStarted(true);
+      setMessage('ソロモードでゲームを開始します');
+    }, 1000);
+  };
   const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
   const [opponentHand, setOpponentHand] = useState([]);
   const [playerGraveyard, setPlayerGraveyard] = useState([]);
@@ -342,9 +379,24 @@ const App = () => {
     collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
   }));
 
+  // Render menu if game hasn't started
+  if (!gameStarted) {
+    return (
+      <Menu 
+        onStartOnlineGame={startOnlineGame} 
+        onStartSoloGame={startSoloGame} 
+      />
+    );
+  }
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={styles.appContainer}>
+        {gameMode === 'online' && (
+          <div className={styles.connectionStatus}>
+            {socket.connected ? 'オンライン接続中' : '接続中...'}
+          </div>
+        )}
         <h1 className={styles.messageHeader}>{message}</h1>
         <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
         <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
