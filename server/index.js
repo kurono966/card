@@ -243,7 +243,6 @@ io.on('connection', (socket) => {
             console.log(`[Server] Player ${socket.id} played ${card.name}, requesting target for 2 damage.`);
           }
           // 他の効果があればここに追加
-        }
 
       } else {
         console.log(`[Server] Player ${socket.id} tried to play card ${card.value}, but not enough mana. Cost: ${card.manaCost}, Current: ${players[socket.id].currentMana}`);
