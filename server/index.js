@@ -292,6 +292,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('resolve_effect_target', ({ sourceCardId, targetCardId, effectType, amount }) => {
+    console.log(`[Server] Received resolve_effect_target from ${socket.id}. Source: ${sourceCardId}, Target: ${targetCardId}, Type: ${effectType}, Amount: ${amount}`);
+
     const playerId = socket.id;
     const opponentId = playerOrder.find(id => id !== playerId);
 
@@ -299,9 +301,16 @@ io.on('connection', (socket) => {
       console.log(`[Server] No opponent found for ${playerId}`);
       return;
     }
+    console.log(`[Server] Opponent ID: ${opponentId}`);
 
     const opponentPlayer = players[opponentId];
+    if (!opponentPlayer) {
+        console.log(`[Server] Opponent player object not found for ID: ${opponentId}`);
+        return;
+    }
+
     const targetCreature = opponentPlayer.played.find(card => card.id === targetCardId);
+    console.log(`[Server] Target creature found: ${targetCreature ? targetCreature.name : 'None'}`);
 
     if (targetCreature && effectType === 'deal_damage') {
       targetCreature.defense -= amount;
