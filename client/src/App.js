@@ -75,6 +75,50 @@ const App = () => {
   const [npcThinking, setNpcThinking] = useState(false);
   const npcTimeoutRef = useRef(null);
 
+  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
+  const [opponentHand, setOpponentHand] = useState([]);
+  const [playerGraveyard, setPlayerGraveyard] = useState([]);
+  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
+  const [yourPlayedCards, setYourPlayedCards] = useState([]);
+  const [yourManaZone, setYourManaZone] = useState([]);
+  const [yourMaxMana, setYourMaxMana] = useState(0);
+  const [yourCurrentMana, setYourCurrentMana] = useState(0);
+  const [yourLife, setYourLife] = useState(20);
+  const [playerDeckSize, setPlayerDeckSize] = useState(0);
+
+  const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
+  const [opponentManaZone, setOpponentManaZone] = useState([]);
+  const [opponentDeckSize, setOpponentDeckSize] = useState(0);
+  const [opponentMaxMana, setOpponentMaxMana] = useState(0);
+  const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
+  const [opponentLife, setOpponentLife] = useState(20);
+
+  const [isYourTurn, setIsYourTurn] = useState(false);
+  const [selectedCardDetail, setSelectedCardDetail] = useState(null);
+  const [effectMessage, setEffectMessage] = useState(null);
+  const [currentPhase, setCurrentPhase] = useState('main_phase_1');
+  const [attackingCreatures, setAttackingCreatures] = useState([]);
+  const [blockingAssignments, setBlockingAssignments] = useState({});
+
+  // --- New states for UI interaction ---
+  const [selectedAttackers, setSelectedAttackers] = useState(new Map());
+  const [selectedBlocker, setSelectedBlocker] = useState(null);
+  const [selectedTarget, setSelectedTarget] = useState(null);
+  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
+
+  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
+  const isTargetingEffectRef = useRef(isTargetingEffect);
+  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
+  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
+  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
+  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
+
+  const isYourTurnRef = useRef(isYourTurn);
+
+  useEffect(() => {
+    isYourTurnRef.current = isYourTurn;
+  }, [isYourTurn]);
+
   useEffect(() => {
     // Set up event listeners when component mounts
     const handleConnect = () => {
@@ -203,7 +247,7 @@ const App = () => {
     if (gameMode === 'solo' && !isYourTurn && gameStarted) {
       makeNPCDecision();
     }
-  }, [isYourTurn, currentPhase, gameMode, gameStarted]);
+  }, [isYourTurn, currentPhase, gameMode, gameStarted, makeNPCDecision]); // Added makeNPCDecision to dependencies
   
   const startSoloGame = () => {
     console.log('Starting solo game...');
@@ -238,48 +282,6 @@ const App = () => {
     setGameStarted(true);
     setMessage('ソロモードでゲームを開始します。あなたのターンです。');
   };
-  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
-  const [opponentHand, setOpponentHand] = useState([]);
-  const [playerGraveyard, setPlayerGraveyard] = useState([]);
-  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
-  const [yourPlayedCards, setYourPlayedCards] = useState([]);
-  const [yourManaZone, setYourManaZone] = useState([]);
-  const [yourMaxMana, setYourMaxMana] = useState(0);
-  const [yourCurrentMana, setYourCurrentMana] = useState(0);
-  const [yourLife, setYourLife] = useState(20);
-  const [playerDeckSize, setPlayerDeckSize] = useState(0);
-
-  const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
-  const [opponentManaZone, setOpponentManaZone] = useState([]);
-  const [opponentDeckSize, setOpponentDeckSize] = useState(0);
-  const [opponentMaxMana, setOpponentMaxMana] = useState(0);
-  const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
-  const [opponentLife, setOpponentLife] = useState(20);
-
-  const [isYourTurn, setIsYourTurn] = useState(false);
-  const [selectedCardDetail, setSelectedCardDetail] = useState(null);
-  const [effectMessage, setEffectMessage] = useState(null);
-  const [currentPhase, setCurrentPhase] = useState('main_phase_1');
-  const [attackingCreatures, setAttackingCreatures] = useState([]);
-  const [blockingAssignments, setBlockingAssignments] = useState({});
-
-  // --- New states for UI interaction ---
-  const [selectedAttackers, setSelectedAttackers] = useState(new Map());
-  const [selectedBlocker, setSelectedBlocker] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
-  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
-
-  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
-  const isTargetingEffectRef = useRef(isTargetingEffect);
-  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
-  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
-  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
-  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
-
-  const isYourTurnRef = useRef(isYourTurn);
-  useEffect(() => {
-    isYourTurnRef.current = isYourTurn;
-  }, [isYourTurn]);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -360,7 +362,7 @@ const App = () => {
       socket.off('effect_triggered');
       socket.off('request_target_for_effect'); // Clean up new listener
     };
-  }, []); // Add empty dependency array and closing bracket
+  }, [currentPhase]); // Added currentPhase to dependencies
 
   const handleEndTurn = () => {
     if (gameMode === 'online') {
@@ -639,7 +641,7 @@ const App = () => {
           </div>
         )}
         <h1 className="text-2xl font-bold my-4">{message}</h1>
-        <h2 className="text-xl font-semibold mb-2">{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h2 className="text-xl font-semibold mb-2">{isYourTurn ? 'Your Turn' : 'Opponent Turn'}</h2>
         <h3 className="text-lg font-medium mb-4">Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
 
         <div className="flex flex-grow w-full max-w-6xl p-4">

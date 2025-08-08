@@ -15,45 +15,35 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
     }),
   }));
 
-  const graveyardStyle = {
-    border: '2px dashed #666',
-    borderRadius: '10px',
-    display: 'flex',
-    flexDirection: 'row', // カードを横に並べる
-    flexWrap: 'wrap', // 折り返しを許可
-    alignItems: 'flex-start', // 上揃え
-    justifyContent: 'flex-start', // 左揃え
-    backgroundColor: isOver ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.3)',
-    color: 'white',
-    position: 'relative',
-    overflowY: 'auto', // 縦スクロールを許可
-    flexGrow: 1, // 利用可能なスペースを埋める
-    minHeight: '7.5vh', // 最小高さを設定 (App.module.cssのmanaZoneに合わせる)
-    maxHeight: '10vh', // 最大高さを設定 (App.module.cssのmanaZoneに合わせる)
-    margin: '0 10px',
-    transition: 'all 0.3s ease',
-    padding: '0.2vh', // App.module.cssのmanaZoneに合わせる
-  };
+  const graveyardClasses = `
+    border-2 border-dashed border-gray-600
+    rounded-lg
+    flex flex-row flex-wrap items-start justify-start
+    ${isOver ? 'bg-white bg-opacity-20' : 'bg-black bg-opacity-30'}
+    text-white
+    relative
+    overflow-y-auto
+    flex-grow
+    min-h-[7.5vh]
+    max-h-[10vh]
+    mx-2
+    transition-all duration-300 ease-in-out
+    p-0.5
+  `;
 
-  const countStyle = {
-    position: 'absolute',
-    top: '5px',
-    right: '5px',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: '50%',
-    width: '24px',
-    height: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '14px',
-    fontWeight: 'bold',
-  };
+  const countClasses = `
+    absolute top-1 right-1
+    bg-black bg-opacity-70
+    rounded-full
+    w-6 h-6
+    flex items-center justify-center
+    text-sm font-bold
+  `;
 
   return (
-    <div ref={drop} style={graveyardStyle}>
+    <div ref={drop} className={graveyardClasses}>
       {cards.length === 0 ? (
-        <p style={{ fontSize: '0.9rem', color: '#f8f8f2', opacity: 0.6 }}>
+        <p className="text-sm text-gray-300 opacity-60">
           {isOpponent ? '相手の墓地' : '墓地'}
         </p>
       ) : (
@@ -74,7 +64,7 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
           />
         ))
       )}
-      <div style={countStyle}>
+      <div className={countClasses}>
         {cards.length}
       </div>
     </div>
