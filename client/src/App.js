@@ -144,7 +144,6 @@ const App = () => {
       if (isYourTurn) {
         // End player's turn, start AI's turn
         setIsYourTurn(false);
-        setMessage('相手のターンです...');
         setCurrentPhase('main_phase_1');
         
         // AI takes its turn after a short delay
@@ -155,6 +154,9 @@ const App = () => {
         setMessage('あなたのターンです');
         setCurrentPhase('main_phase_1');
         
+        // Refill mana to max mana
+        setYourCurrentMana(yourMaxMana);
+
         // Draw a card at the start of player's turn
         if (playerDeckSize > 0) {
           setPlayerDeckSize(prev => prev - 1);
@@ -179,132 +181,95 @@ const App = () => {
   // AI turn logic for solo mode
   const aiTurn = () => {
     console.log('AI turn started');
-    
-    // Make sure it's AI's turn
-    if (isYourTurn) {
-      console.log('Not AI\'s turn, skipping AI turn');
-      return;
-    }
-    
-    console.log('Processing AI turn...');
-    
-    // AI draws a card at the start of its turn
-    setOpponentDeckSize(prev => {
-      const newDeckSize = prev - 1;
-      if (newDeckSize >= 0) {
-        setOpponentHand(hand => [...hand, getRandomCard()]);
-      }
-      return Math.max(0, newDeckSize);
-    });
-    
-    // Increment max mana (up to 10)
-    setOpponentMaxMana(prev => {
-      const newMaxMana = Math.min(prev + 1, 10);
-      setOpponentCurrentMana(newMaxMana);
-      return newMaxMana;
-    });
-    
-    // Play cards after a short delay to allow state updates
+    setMessage('相手のターンです...');
+
+    // --- Phase 1: Start of Turn (Draw, Mana) ---
     setTimeout(() => {
-      // Get current state values
-      const currentMana = opponentCurrentMana;
-      const currentHand = [...opponentHand]; // Create a copy of the current hand
-      
-      console.log('AI current hand:', currentHand);
-      console.log('AI current mana:', currentMana);
-      
-      // AI plays cards if it can
-      const playableCards = currentHand.filter(card => 
-        card.manaCost <= currentMana
-      );
-      
-      // Sort by mana cost (cheapest first)
-      playableCards.sort((a, b) => a.manaCost - b.manaCost);
-      
-      console.log('AI playable cards:', playableCards);
-      
-      // Play as many cards as possible
-      let remainingMana = currentMana;
-      const cardsToPlay = [];
-      
-      for (const card of playableCards) {
-        if (card.manaCost <= remainingMana) {
-          cardsToPlay.push(card);
-          remainingMana -= card.manaCost;
-        }
+      let drawnCard = null;
+      if (opponentDeckSize > 0) {
+        drawnCard = getRandomCard();
       }
-      
-      console.log('AI will play cards:', cardsToPlay);
-      
-      // Update game state after a short delay for each card played
-      if (cardsToPlay.length > 0) {
-        cardsToPlay.forEach((card, index) => {
-          setTimeout(() => {
-            // Remove card from AI's hand
-            setOpponentHand(prev => prev.filter(c => c.id !== card.id));
-            
-            // Add to played cards if it's a creature
-            if (card.attack > 0 && card.defense > 0) {
-              const cardWithSummoningSickness = {
-                ...card,
-                canAttack: false, // Summoning sickness
-                isTapped: false
-              };
-              setOpponentPlayedCards(prev => [...prev, cardWithSummoningSickness]);
-              setMessage(`相手が${card.name}をプレイしました`);
-              
-              // Handle card effects on summon
-              if (card.effect) {
-                handleCardEffect(card);
-              }
-            } else if (card.effect) {
-              // Handle spell effects
-              setMessage(`相手が${card.name}を使用しました！`);
-              
-              // Handle different spell effects
-              if (card.effect === 'draw') {
-                // Draw a card
-                setOpponentDeckSize(prev => {
-                  if (prev > 0) {
-                    setOpponentHand(hand => [...hand, getRandomCard()]);
-                    return prev - 1;
-                  }
-                  return prev;
-                });
-              } else if (card.effect === 'damage') {
-                // Deal damage to player
-                setYourLife(prev => Math.max(0, prev - 2));
-              }
-              
-              // Remove the card from hand after playing
-              setOpponentHand(prev => prev.filter(c => c.id !== card.id));
-            }
-          }, 1000 * (index + 1));
-        });
+      const newMaxMana = Math.min(opponentMaxMana + 1, 10);
+
+      // Update state in a clean way
+      setOpponentMaxMana(newMaxMana);
+      setOpponentCurrentMana(newMaxMana);
+      if (drawnCard) {
+        setOpponentDeckSize(prev => prev - 1);
+        setOpponentHand(prev => [...prev, drawnCard]);
       }
-      
-      // After playing cards, attack with all untapped creatures
+
+      // --- Phase 2: Play Cards ---
+      // Use another timeout to allow state to update before making decisions
       setTimeout(() => {
-        setOpponentPlayedCards(prev => {
-          let totalAttack = 0;
-          const updatedOpponentPlayedCards = prev.map(card => {
-            if (!card.isTapped) {
-              totalAttack += card.attack;
-              return { ...card, isTapped: true };
+        // Use functional updates to ensure we have the latest state for decisions
+        setOpponentHand(currentHand => {
+          setOpponentCurrentMana(currentMana => {
+            let manaToSpend = currentMana;
+            let handToPlayFrom = [...currentHand];
+            const cardsToPlay = [];
+
+            const playableCards = handToPlayFrom
+              .filter(c => c.manaCost <= manaToSpend)
+              .sort((a, b) => a.manaCost - b.manaCost);
+
+            for (const card of playableCards) {
+              if (card.manaCost <= manaToSpend) {
+                cardsToPlay.push(card);
+                manaToSpend -= card.manaCost;
+              }
             }
-            return card;
+
+            if (cardsToPlay.length > 0) {
+              // Remove played cards from hand state
+              const newHand = handToPlayFrom.filter(c => !cardsToPlay.some(pc => pc.id === c.id));
+              setOpponentHand(newHand);
+
+              // Add creatures to field and handle spells
+              cardsToPlay.forEach(card => {
+                if (card.attack > 0 && card.defense > 0) {
+                  const creature = { ...card, canAttack: false, isTapped: false };
+                  setOpponentPlayedCards(prev => [...prev, creature]);
+                } else {
+                  handleCardEffect(card);
+                }
+              });
+              setMessage(`相手が${cardsToPlay.length}枚のカードをプレイしました`);
+            }
+            return manaToSpend; // Return new mana value
           });
-          
-          if (totalAttack > 0) {
-            setYourLife(prevLife => Math.max(0, prevLife - totalAttack));
-            setMessage(`相手が${totalAttack}のダメージを与えました！`);
-            setTimeout(() => endTurn(), 1500);
-          } else {
-            setMessage('相手は何もせずにターンを終了しました');
-            setTimeout(() => endTurn(), 1000);
-          }
-          return updatedOpponentPlayedCards;
+          return currentHand; // This will be stale, but we update it inside the mana setter
         });
+
+        // --- Phase 3: Attack ---
+        setTimeout(() => {
+          setOpponentPlayedCards(prevCards => {
+            let totalAttack = 0;
+            const attackingCards = prevCards.map(card => {
+              if (!card.isTapped) { // In this simple AI, anything that can attack will attack
+                totalAttack += card.attack;
+                return { ...card, isTapped: true };
+              }
+              return card;
+            });
+
+            if (totalAttack > 0) {
+              setYourLife(prev => Math.max(0, prev - totalAttack));
+              setMessage(`相手が${totalAttack}のダメージを与えました！`);
+            } else {
+              setMessage('相手は何もせずにターンを終了しました');
+            }
+            return attackingCards;
+          });
+
+          // --- Phase 4: End Turn ---
+          setTimeout(() => {
+            // Remove summoning sickness from creatures that survived
+            setOpponentPlayedCards(prev => prev.map(c => ({ ...c, canAttack: true })))
+            endTurn();
+          }, 1500);
+
+        }, 1500);
       }, 1000);
     }, 1000);
   };
@@ -839,13 +804,33 @@ const App = () => {
 
   const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'mana'),
+    drop: (item) => {
+      if (gameMode === 'solo') {
+        if (!isYourTurn) return;
+        const card = playerHand.find(c => c.id === item.id);
+        if (card) {
+          setPlayerHand(prev => prev.filter(c => c.id !== item.id));
+          setYourManaZone(prev => [...prev, card]);
+          setYourMaxMana(prev => prev + 1);
+          setMessage(`${card.name}をマナに置きました`);
+        }
+      } else {
+        socket.emit('play_card', item.id, 'mana');
+      }
+    },
     collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
   }));
 
   const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'field'),
+    drop: (item) => {
+      if (gameMode === 'solo') {
+        // The item from react-dnd is the full card object
+        handleCardAction(item, 'play');
+      } else {
+        socket.emit('play_card', item.id, 'field');
+      }
+    },
     collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
   }));
 
