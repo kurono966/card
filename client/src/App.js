@@ -72,12 +72,24 @@ const App = () => {
   const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
-    // Set up event listeners when component mounts
+    // Only connect if in online mode
+    if (gameMode === 'online' && !socketConnected) {
+      console.log('Connecting to server...');
+      socket.connect();
+    } else if (gameMode === 'solo') {
+      // Make sure socket is disconnected in solo mode
+      if (socket.connected) {
+        console.log('Disconnecting socket for solo mode...');
+        socket.disconnect();
+      }
+      setSocketConnected(false);
+    }
+
+    // Set up event listeners
     const handleConnect = () => {
       console.log('✅ Connected to server with ID:', socket.id);
-      console.log('Transport:', socket.io.engine.transport.name);
-      setMessage('接続されました。ゲームを開始します...');
       setSocketConnected(true);
+      setMessage('サーバーに接続しました。ゲームを開始します...');
     };
 
     const handleConnectError = (error) => {
@@ -308,21 +320,38 @@ const App = () => {
   const startSoloGame = () => {
     console.log('Starting solo game...');
     
+    // Disconnect socket if connected (in case switching from online mode)
+    if (socket.connected) {
+      console.log('Disconnecting from server for solo mode...');
+      socket.disconnect();
+      setSocketConnected(false);
+    }
+    
     // Reset all game state first
     setGameMode('solo');
     setMessage('ソロモードを準備中...');
     
     // Initialize player's hand with random cards (ensuring unique IDs)
-    const initialPlayerHand = Array(5).fill().map(() => ({
-      ...getRandomCard(),
-      id: `player-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }));
+    const initialPlayerHand = Array(5).fill().map(() => {
+      const card = getRandomCard();
+      return {
+        ...card,
+        id: `player-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        canAttack: false,
+        isTapped: false
+      };
+    });
     
     // Initialize AI's hand with random cards (ensuring unique IDs)
-    const initialAIHand = Array(5).fill().map(() => ({
-      ...getRandomCard(),
-      id: `ai-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }));
+    const initialAIHand = Array(5).fill().map(() => {
+      const card = getRandomCard();
+      return {
+        ...card,
+        id: `ai-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        canAttack: false,
+        isTapped: false
+      };
+    });
     
     // Set initial game state
     setPlayerHand(initialPlayerHand);
