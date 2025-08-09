@@ -307,39 +307,61 @@ const App = () => {
 
   const startSoloGame = () => {
     console.log('Starting solo game...');
+    
+    // Reset all game state first
     setGameMode('solo');
     setMessage('ソロモードを準備中...');
     
-    // Initialize player's hand with random cards
-    const initialPlayerHand = Array(5).fill().map(() => getRandomCard());
+    // Initialize player's hand with random cards (ensuring unique IDs)
+    const initialPlayerHand = Array(5).fill().map(() => ({
+      ...getRandomCard(),
+      id: `player-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }));
     
-    // Initialize AI's hand with random cards
-    const initialAIHand = Array(5).fill().map(() => getRandomCard());
+    // Initialize AI's hand with random cards (ensuring unique IDs)
+    const initialAIHand = Array(5).fill().map(() => ({
+      ...getRandomCard(),
+      id: `ai-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }));
     
     // Set initial game state
     setPlayerHand(initialPlayerHand);
     setPlayerDeckSize(20);
+    setPlayerGraveyard([]);
     setYourPlayedCards([]);
     setYourManaZone([]);
-    setYourMaxMana(0);
-    setYourCurrentMana(0);
+    setYourMaxMana(1); // Start with 1 mana
+    setYourCurrentMana(1);
     setYourLife(20);
     
     // Set up AI opponent
     setOpponentHand(initialAIHand);
     setOpponentPlayedCards([]);
     setOpponentManaZone([]);
+    setOpponentGraveyard([]);
     setOpponentDeckSize(20);
-    setOpponentMaxMana(0);
-    setOpponentCurrentMana(0);
+    setOpponentMaxMana(1);
+    setOpponentCurrentMana(1);
     setOpponentLife(20);
     
-    // Start with player's turn
-    setIsYourTurn(true);
+    // Reset other game state
+    setSelectedAttackers(new Map());
+    setBlockingAssignments({});
+    setSelectedTarget(null);
+    setTempSelectedBlocker(null);
+    setAttackingCreatures([]);
     setCurrentPhase('main_phase_1');
+    setIsYourTurn(true);
     
     // Start the game
     setGameStarted(true);
+    console.log('Solo game started with state:', {
+      playerHand: initialPlayerHand,
+      aiHand: initialAIHand,
+      playerMana: 1,
+      playerLife: 20,
+      aiLife: 20
+    });
     setMessage('ソロモードを開始します。あなたのターンです。');
   };
   const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
