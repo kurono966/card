@@ -178,123 +178,116 @@ const App = () => {
 
   // AI turn logic for solo mode
   const aiTurn = () => {
-    if (isYourTurn) return; // Don't execute if it's not AI's turn
+    console.log('AI turn started');
+    
+    // Make sure it's AI's turn
+    if (isYourTurn) {
+      console.log('Not AI\'s turn, skipping AI turn');
+      return;
+    }
+    
+    console.log('Processing AI turn...');
     
     // AI draws a card at the start of its turn
-    if (opponentDeckSize > 0) {
-      setOpponentDeckSize(prev => prev - 1);
-      setOpponentHand(prev => [...prev, getRandomCard()]);
-    }
+    setOpponentDeckSize(prev => {
+      const newDeckSize = prev - 1;
+      if (newDeckSize >= 0) {
+        setOpponentHand(hand => [...hand, getRandomCard()]);
+      }
+      return Math.max(0, newDeckSize);
+    });
     
     // Increment max mana (up to 10)
-    setOpponentMaxMana(prev => Math.min(prev + 1, 10));
-    setOpponentCurrentMana(prev => Math.min(prev + 1, 10));
+    setOpponentMaxMana(prev => {
+      const newMaxMana = Math.min(prev + 1, 10);
+      setOpponentCurrentMana(newMaxMana);
+      return newMaxMana;
+    });
     
-    // AI plays cards if it can
-    const playableCards = opponentHand.filter(card => 
-      card.manaCost <= opponentCurrentMana
-    );
-    
-    // Sort cards by cost (cheapest first)
-    playableCards.sort((a, b) => a.manaCost - b.manaCost);
-    
-    // Play cards until out of mana or no more playable cards
-    let remainingMana = opponentCurrentMana;
-    const cardsToPlay = [];
-    
-    for (const card of playableCards) {
-      if (card.manaCost <= remainingMana) {
-        cardsToPlay.push(card);
-        remainingMana -= card.manaCost;
-      }
-    }
-    
-    // Update game state after a short delay for each card played
-    if (cardsToPlay.length > 0) {
-      let delay = 1000;
+    // Play cards after a short delay to allow state updates
+    setTimeout(() => {
+      // Get current state values
+      const currentMana = opponentCurrentMana;
+      const currentHand = [...opponentHand]; // Create a copy of the current hand
       
-      cardsToPlay.forEach((card, index) => {
-        setTimeout(() => {
-          // Remove card from AI's hand
-          setOpponentHand(prev => prev.filter(c => c.id !== card.id));
-          
-          // Add to played cards if it's a creature
-          if (card.attack > 0 && card.defense > 0) {
-            const cardWithSummoningSickness = {
-              ...card,
-              canAttack: false, // Summoning sickness
-              isTapped: false
-            };
-            setOpponentPlayedCards(prev => [...prev, cardWithSummoningSickness]);
-            setMessage(`相手が${card.name}を召喚しました！`);
+      console.log('AI current hand:', currentHand);
+      console.log('AI current mana:', currentMana);
+      
+      // AI plays cards if it can
+      const playableCards = currentHand.filter(card => 
+        card.manaCost <= currentMana
+      );
+      
+      // Sort by mana cost (cheapest first)
+      playableCards.sort((a, b) => a.manaCost - b.manaCost);
+      
+      console.log('AI playable cards:', playableCards);
+      
+      // Play as many cards as possible
+      let remainingMana = currentMana;
+      const cardsToPlay = [];
+      
+      for (const card of playableCards) {
+        if (card.manaCost <= remainingMana) {
+          cardsToPlay.push(card);
+          remainingMana -= card.manaCost;
+        }
+      }
+      
+      console.log('AI will play cards:', cardsToPlay);
+      
+      // Update game state after a short delay for each card played
+      if (cardsToPlay.length > 0) {
+        cardsToPlay.forEach((card, index) => {
+          setTimeout(() => {
+            // Remove card from AI's hand
+            setOpponentHand(prev => prev.filter(c => c.id !== card.id));
             
-            // Handle card effects on summon
-            if (card.effect === "Deal 2 damage to opponent creature") {
-              // Simple AI: target a random player creature if any exist
-              if (yourPlayedCards.length > 0) {
-                const targetIndex = Math.floor(Math.random() * yourPlayedCards.length);
-                const target = yourPlayedCards[targetIndex];
-                
-                setTimeout(() => {
-                  setYourPlayedCards(prev => 
-                    prev.map(c => 
-                      c.id === target.id 
-                        ? { ...c, defense: c.defense - 2 } 
-                        : c
-                    ).filter(c => c.defense > 0)
-                  );
-                  setMessage(`相手の${card.name}が${target.name}に2ダメージ与えました！`);
-                }, 500);
-              }
-            }
-          } else if (card.effect) {
-            // Handle spell effects
-            setMessage(`相手が${card.name}を使用しました！`);
-            
-            if (card.effect === "Draw 1 card") {
-              // AI draws a card
-              if (opponentDeckSize > 0) {
-                setOpponentDeckSize(prev => prev - 1);
-                setOpponentHand(prev => [...prev, getRandomCard()]);
-              }
-            }
-          }
-          
-          // Update AI's mana
-          setOpponentCurrentMana(prev => prev - card.manaCost);
-          
-          // If this is the last card, end AI's turn after a delay
-          if (index === cardsToPlay.length - 1) {
-            setTimeout(() => {
-              // AI attacks with all untapped creatures
-              let totalAttack = 0;
-              const updatedOpponentPlayedCards = opponentPlayedCards.map(card => {
-                if (!card.isTapped) {
-                  totalAttack += card.attack;
-                  return { ...card, isTapped: true };
-                }
-                return card;
-              });
+            // Add to played cards if it's a creature
+            if (card.attack > 0 && card.defense > 0) {
+              const cardWithSummoningSickness = {
+                ...card,
+                canAttack: false, // Summoning sickness
+                isTapped: false
+              };
+              setOpponentPlayedCards(prev => [...prev, cardWithSummoningSickness]);
+              setMessage(`相手が${card.name}をプレイしました`);
               
-              if (totalAttack > 0) {
-                setYourLife(prev => Math.max(0, prev - totalAttack));
-                setMessage(`相手が${totalAttack}のダメージを与えました！`);
-                setOpponentPlayedCards(updatedOpponentPlayedCards);
+              // Handle card effects on summon
+              if (card.effect) {
+                handleCardEffect(card);
+              }
+            } else if (card.effect) {
+              // Handle spell effects
+              setMessage(`相手が${card.name}を使用しました！`);
+              
+              // Handle different spell effects
+              if (card.effect === 'draw') {
+                // Draw a card
+                setOpponentDeckSize(prev => {
+                  if (prev > 0) {
+                    setOpponentHand(hand => [...hand, getRandomCard()]);
+                    return prev - 1;
+                  }
+                  return prev;
+                });
+              } else if (card.effect === 'damage') {
+                // Deal damage to player
+                setYourLife(prev => Math.max(0, prev - 2));
               }
               
-              // End AI's turn after attacking
-              setTimeout(() => endTurn(), 1500);
-            }, 1000);
-          }
-        }, delay);
-        
-        delay += 1000; // Add delay between card plays
-      });
-    } else {
-      // No cards played, end turn after a delay
+              // Remove the card from hand after playing
+              setOpponentHand(prev => prev.filter(c => c.id !== card.id));
+            }
+          }, 1000 * (index + 1));
+        });
+      }
+      
+      // After playing cards, attack with all untapped creatures
       setTimeout(() => {
-        // AI still attacks with untapped creatures if possible
-        let totalAttack = 0;
+        setOpponentPlayedCards(prev => {
+          const updatedCards = [...prev];
+          let totalAttack = 0;
         const updatedOpponentPlayedCards = opponentPlayedCards.map(card => {
           if (!card.isTapped) {
             totalAttack += card.attack;
