@@ -111,7 +111,7 @@ const App = () => {
       socket.off('connect', handleConnect);
       socket.off('connect_error', handleConnectError);
     };
-  }, []);
+  }, [gameMode, socketConnected]);
   
   // Start game functions
   const startOnlineGame = () => {
@@ -286,28 +286,27 @@ const App = () => {
       // After playing cards, attack with all untapped creatures
       setTimeout(() => {
         setOpponentPlayedCards(prev => {
-          const updatedCards = [...prev];
           let totalAttack = 0;
-        const updatedOpponentPlayedCards = opponentPlayedCards.map(card => {
-          if (!card.isTapped) {
-            totalAttack += card.attack;
-            return { ...card, isTapped: true };
-          }
-          return card;
-        });
-        
-        if (totalAttack > 0) {
-          setYourLife(prev => Math.max(0, prev - totalAttack));
-          setMessage(`相手が${totalAttack}のダメージを与えました！`);
-          setOpponentPlayedCards(updatedOpponentPlayedCards);
+          const updatedOpponentPlayedCards = prev.map(card => {
+            if (!card.isTapped) {
+              totalAttack += card.attack;
+              return { ...card, isTapped: true };
+            }
+            return card;
+          });
           
-          setTimeout(() => endTurn(), 1500);
-        } else {
-          setMessage('相手は何もせずにターンを終了しました');
-          setTimeout(() => endTurn(), 1000);
-        }
+          if (totalAttack > 0) {
+            setYourLife(prevLife => Math.max(0, prevLife - totalAttack));
+            setMessage(`相手が${totalAttack}のダメージを与えました！`);
+            setTimeout(() => endTurn(), 1500);
+          } else {
+            setMessage('相手は何もせずにターンを終了しました');
+            setTimeout(() => endTurn(), 1000);
+          }
+          return updatedOpponentPlayedCards;
+        });
       }, 1000);
-    }
+    }, 1000);
   };
 
   const startSoloGame = () => {
@@ -508,7 +507,7 @@ const App = () => {
       socket.off('effect_triggered');
       socket.off('request_target_for_effect'); // Clean up new listener
     };
-  }, []); // Add empty dependency array and closing bracket
+  }, [currentPhase]);
 
   const handleNextPhase = () => {
     if (gameMode === 'solo') {
