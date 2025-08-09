@@ -180,100 +180,17 @@ const App = () => {
     }
   };
 
-  // AI turn logic for solo mode
+  // AI turn logic for solo mode (Simplified for debugging)
   const aiTurn = () => {
-    console.log('AI turn started');
-    setMessage('相手のターンです...');
+    console.log("AI turn started (Debug Mode)");
+    setMessage("相手は考えています...");
 
-    // --- Phase 1: Start of Turn (Draw, Mana) ---
+    // AI does nothing but wait, then ends its turn.
+    // This is to test if the turn-passing itself is causing a loop.
     setTimeout(() => {
-      let drawnCard = null;
-      if (opponentDeckSize > 0) {
-        drawnCard = getRandomCard();
-      }
-      const newMaxMana = Math.min(opponentMaxMana + 1, 10);
-
-      // Update state in a clean way
-      setOpponentMaxMana(newMaxMana);
-      setOpponentCurrentMana(newMaxMana);
-      if (drawnCard) {
-        setOpponentDeckSize(prev => prev - 1);
-        setOpponentHand(prev => [...prev, drawnCard]);
-      }
-
-      // --- Phase 2: Play Cards ---
-      // Use another timeout to allow state to update before making decisions
-      setTimeout(() => {
-        // Use functional updates to ensure we have the latest state for decisions
-        setOpponentHand(currentHand => {
-          setOpponentCurrentMana(currentMana => {
-            let manaToSpend = currentMana;
-            let handToPlayFrom = [...currentHand];
-            const cardsToPlay = [];
-
-            const playableCards = handToPlayFrom
-              .filter(c => c.manaCost <= manaToSpend)
-              .sort((a, b) => a.manaCost - b.manaCost);
-
-            for (const card of playableCards) {
-              if (card.manaCost <= manaToSpend) {
-                cardsToPlay.push(card);
-                manaToSpend -= card.manaCost;
-              }
-            }
-
-            if (cardsToPlay.length > 0) {
-              // Remove played cards from hand state
-              const newHand = handToPlayFrom.filter(c => !cardsToPlay.some(pc => pc.id === c.id));
-              setOpponentHand(newHand);
-
-              // Add creatures to field and handle spells
-              cardsToPlay.forEach(card => {
-                if (card.attack > 0 && card.defense > 0) {
-                  const creature = { ...card, canAttack: false, isTapped: false };
-                  setOpponentPlayedCards(prev => [...prev, creature]);
-                } else {
-                  handleCardEffect(card);
-                }
-              });
-              setMessage(`相手が${cardsToPlay.length}枚のカードをプレイしました`);
-            }
-            return manaToSpend; // Return new mana value
-          });
-          return currentHand; // This will be stale, but we update it inside the mana setter
-        });
-
-        // --- Phase 3: Attack ---
-        setTimeout(() => {
-          setOpponentPlayedCards(prevCards => {
-            let totalAttack = 0;
-            const attackingCards = prevCards.map(card => {
-              if (!card.isTapped) { // In this simple AI, anything that can attack will attack
-                totalAttack += card.attack;
-                return { ...card, isTapped: true };
-              }
-              return card;
-            });
-
-            if (totalAttack > 0) {
-              setYourLife(prev => Math.max(0, prev - totalAttack));
-              setMessage(`相手が${totalAttack}のダメージを与えました！`);
-            } else {
-              setMessage('相手は何もせずにターンを終了しました');
-            }
-            return attackingCards;
-          });
-
-          // --- Phase 4: End Turn ---
-          setTimeout(() => {
-            // Remove summoning sickness from creatures that survived
-            setOpponentPlayedCards(prev => prev.map(c => ({ ...c, canAttack: true })))
-            endTurn();
-          }, 1500);
-
-        }, 1500);
-      }, 1000);
-    }, 1000);
+        console.log("AI is passing the turn back.");
+        endTurn();
+    }, 2000);
   };
 
   const startSoloGame = () => {
