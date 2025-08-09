@@ -560,6 +560,36 @@ const App = () => {
     }
   };
 
+  // Handle card effects when played
+  const handleCardEffect = (card) => {
+    console.log(`Resolving effect for card: ${card.name}`);
+    
+    // Handle different card effects
+    if (card.effect) {
+      if (card.effect.type === 'damage') {
+        // Deal damage to opponent
+        setOpponentLife(prev => Math.max(0, prev - card.effect.amount));
+        setMessage(`${card.name}の効果で相手に${card.effect.amount}ダメージ！`);
+      } else if (card.effect.type === 'heal') {
+        // Heal player
+        setYourLife(prev => Math.min(20, prev + card.effect.amount));
+        setMessage(`${card.name}の効果で${card.effect.amount}回復しました！`);
+      } else if (card.effect.type === 'draw') {
+        // Draw cards
+        const cardsToDraw = Math.min(card.effect.amount, playerDeckSize);
+        if (cardsToDraw > 0) {
+          const drawnCards = Array(cardsToDraw).fill().map(() => getRandomCard());
+          setPlayerHand(prev => [...prev, ...drawnCards]);
+          setPlayerDeckSize(prev => prev - cardsToDraw);
+          setMessage(`${card.name}の効果で${cardsToDraw}枚ドロー！`);
+        }
+      }
+    } else {
+      // Default effect for cards without specific effects
+      setMessage(`${card.name}をプレイしました`);
+    }
+  };
+
   const handleCardAction = (card, actionType) => {
     if (actionType === 'hover') {
       setSelectedCardDetail(card);
