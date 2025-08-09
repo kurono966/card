@@ -313,6 +313,12 @@ const App = () => {
   }, [isYourTurn]);
 
   useEffect(() => {
+    if (gameMode !== 'online') {
+      // In solo mode, we should not have any socket listeners active.
+      return;
+    }
+
+    // These listeners are for online mode only.
     socket.on('connect', () => {
       setMessage('Connected to server!');
       socket.emit('request_game_state');
@@ -344,7 +350,6 @@ const App = () => {
       setOpponentCurrentMana(state.opponentCurrentMana);
       setOpponentLife(state.opponentLife);
 
-      // Update graveyards if they exist in the state
       if (state.yourGraveyard) {
         setPlayerGraveyard(state.yourGraveyard);
       }
@@ -357,7 +362,6 @@ const App = () => {
       setAttackingCreatures(state.attackingCreatures || []);
       setBlockingAssignments(state.blockingAssignments || {});
 
-      // Reset selections on phase change
       if (state.currentPhase !== currentPhase) {
         setSelectedAttackers(new Map());
         setSelectedBlocker(null);
@@ -370,17 +374,14 @@ const App = () => {
       setTimeout(() => setEffectMessage(null), 3000);
     });
 
-    // New listener for effect targeting
     socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
       console.log('[App.js] Received request_target_for_effect:', { type, amount, sourceCardId, message });
       setIsTargetingEffect(true);
-      isTargetingEffectRef.current = true; // Update ref immediately
+      isTargetingEffectRef.current = true;
       setEffectSourceCardId(sourceCardId);
       setEffectMessageForTarget(message);
       setEffectTypeForTarget(type);
       setEffectAmountForTarget(amount);
-      console.log('[App.js] isTargetingEffect set to true.', isTargetingEffectRef.current);
-      // Optionally, highlight potential targets here if needed
     });
 
     return () => {
@@ -389,9 +390,9 @@ const App = () => {
       socket.off('connect_error');
       socket.off('game_state');
       socket.off('effect_triggered');
-      socket.off('request_target_for_effect'); // Clean up new listener
+      socket.off('request_target_for_effect');
     };
-  }, [currentPhase]);
+  }, [gameMode, currentPhase]);
 
   const handleNextPhase = () => {
     if (gameMode === 'solo') {
@@ -477,7 +478,8 @@ const App = () => {
           // ブロック宣言フェイズ以外なら、単純にフェーズを進める
           socket.emit('next_phase');
         }
-      } else {
+      }
+      else {
         // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
         if (currentPhase === 'declare_blockers') {
           socket.emit('declare_blockers', blockingAssignments);
@@ -627,13 +629,17 @@ const App = () => {
   const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item) => handleCardAction(item, 'playToMana'),
-    collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
+    collect: (monitor) => ({
+      isOverYourMana: !!monitor.isOver()
+    }),
   }));
 
   const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item) => handleCardAction(item, 'play'),
-    collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
+    collect: (monitor) => ({
+      isOverYourField: !!monitor.isOver()
+    }),
   }));
 
   // Render menu if game hasn't started
