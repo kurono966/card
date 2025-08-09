@@ -467,22 +467,27 @@ const App = () => {
   }, []); // Add empty dependency array and closing bracket
 
   const handleNextPhase = () => {
-    // 自分のターンかどうかで処理を分岐
-    if (isYourTurnRef.current) {
-      // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
-      if (currentPhase === 'declare_attackers') {
-        const attackerIds = Array.from(selectedAttackers.keys());
-        socket.emit('declare_attackers', attackerIds);
-        socket.emit('next_phase'); // サーバーにフェーズ進行を要求
-      } else if (currentPhase !== 'declare_blockers') {
-        // ブロック宣言フェイズ以外なら、単純にフェーズを進める
-        socket.emit('next_phase');
-      }
+    if (gameMode === 'solo') {
+      // In solo mode, simply end the turn
+      endTurn();
     } else {
-      // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
-      if (currentPhase === 'declare_blockers') {
-        socket.emit('declare_blockers', blockingAssignments);
-        socket.emit('next_phase');
+      // 自分のターンかどうかで処理を分岐
+      if (isYourTurnRef.current) {
+        // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
+        if (currentPhase === 'declare_attackers') {
+          const attackerIds = Array.from(selectedAttackers.keys());
+          socket.emit('declare_attackers', attackerIds);
+          socket.emit('next_phase'); // サーバーにフェーズ進行を要求
+        } else if (currentPhase !== 'declare_blockers') {
+          // ブロック宣言フェイズ以外なら、単純にフェーズを進める
+          socket.emit('next_phase');
+        }
+      } else {
+        // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
+        if (currentPhase === 'declare_blockers') {
+          socket.emit('declare_blockers', blockingAssignments);
+          socket.emit('next_phase');
+        }
       }
     }
   };
@@ -502,14 +507,91 @@ const App = () => {
         // Move from opponent's field to their graveyard
         setOpponentGraveyard(prev => [...prev, card]);
         setOpponentPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (playerHand.some(c => c.id === card.id)) {
-        // Move from your hand to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setPlayerHand(prev => prev.filter(c => c.id !== card.id));
-      } else if (yourManaZone.some(c => c.id === card.id)) {
-        // Move from your mana zone to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setYourManaZone(prev => prev.filter(c => c.id !== card.id));
+      }
+    } else if (actionType === 'play') {
+      if (gameMode === 'solo') {
+        // Solo mode: Play card to field or mana zone
+        if (yourCurrentMana >= card.manaCost) {
+          setYourCurrentMana(prev => prev - card.manaCost);
+          setPlayerHand(prev => prev.filter(c => c.id !== card.id));
+          
+          // If it's a creature, add to played cards with summoning sickness
+          if (card.attack > 0 && card.defense > 0) {
+            setYourPlayedCards(prev => [...prev, { ...card, canAttack: false, isTapped: false }]);
+            setMessage(`${card.name}を召喚しました`);
+          } else {
+            // For non-creature cards, handle their effects immediately
+            handleCardEffect(card);
+          }
+        }
+      } else {
+        // Online mode: Emit socket event
+        socket.emit('play_card', card.id, 'field');
+      }
+    } else if (actionType === 'tap') {
+      // Handle tapping/untapping a card
+      if (yourPlayedCards.some(c => c.id === card.id)) {
+        setYourPlayedCards(prev => 
+          prev.map(c => 
+            c.id === card.id 
+              ? { ...c, isTapped: !c.isTapped } 
+              : c
+          )
+        );
+      }
+    } else if (actionType === 'attack') {
+      if (gameMode === 'solo') {
+        // Solo mode: Attack with creature
+        if (currentPhase === 'main_phase_1' || currentPhase === 'combat') {
+          // Mark the creature as tapped and attacking
+          setYourPlayedCards(prev => 
+            prev.map(c => 
+              c.id === card.id 
+                ? { ...c, isTapped: true, canAttack: false } 
+                : c
+            )
+          );
+          
+          // Deal damage to opponent
+          setOpponentLife(prev => Math.max(0, prev - card.attack));
+          setMessage(`${card.name}が相手に${card.attack}ダメージ与えました！`);
+        }
+      } else {
+        // Online mode: Handle attack declaration
+        if (currentPhase === 'declare_attackers' && isYourTurn) {
+          setSelectedAttackers(prev => {
+            const newAttackers = new Map(prev);
+            if (newAttackers.has(card.id)) {
+              newAttackers.delete(card.id);
+            } else {
+              newAttackers.set(card.id, card);
+            }
+            return newAttackers;
+          });
+        }
+      }
+    } else if (actionType === 'block') {
+      if (gameMode === 'solo') {
+        // In solo mode, AI will handle blocking automatically
+        return;
+      } else {
+        // Online mode: Handle blocking
+        if (currentPhase === 'declare_blockers' && !isYourTurn) {
+          if (selectedTarget) {
+            // Assign blocker to selected target
+            const newAssignments = { ...blockingAssignments };
+            if (!newAssignments[selectedTarget]) {
+              newAssignments[selectedTarget] = [];
+            }
+            if (!newAssignments[selectedTarget].includes(tempSelectedBlocker)) {
+              newAssignments[selectedTarget].push(tempSelectedBlocker);
+            }
+            setBlockingAssignments(newAssignments);
+            socket.emit('declare_blockers', newAssignments);
+            setSelectedTarget(null);
+            setTempSelectedBlocker(null);
+          }
+        }
       }
     } else if (actionType === 'click') {
       // --- Effect Targeting Logic ---
