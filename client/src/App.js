@@ -138,7 +138,6 @@ const App = () => {
     });
   };
 
-  // Handle end of turn in solo mode
   const endTurn = () => {
     if (gameMode === 'solo') {
       if (isYourTurn) {
@@ -157,11 +156,14 @@ const App = () => {
         // Refill mana to max mana
         setYourCurrentMana(yourMaxMana);
 
-        // Draw a card at the start of player's turn
-        if (playerDeckSize > 0) {
-          setPlayerDeckSize(prev => prev - 1);
-          setPlayerHand(prev => [...prev, getRandomCard()]);
-        }
+        // Draw a card at the start of player's turn, using a safer functional update
+        setPlayerDeckSize(prevDeckSize => {
+          if (prevDeckSize > 0) {
+            setPlayerHand(prevHand => [...prevHand, getRandomCard()]);
+            return prevDeckSize - 1;
+          }
+          return prevDeckSize;
+        });
         
         // Untap all player's cards at the start of turn
         setYourPlayedCards(prev => 
@@ -601,62 +603,65 @@ const App = () => {
   const handleCardAction = (card, actionType) => {
     if (actionType === 'hover') {
       setSelectedCardDetail(card);
-    } else if (actionType === 'leave') {
+      return;
+    }
+    if (actionType === 'leave') {
       setSelectedCardDetail(null);
-    } else if (actionType === 'toGraveyard') {
-      // Handle moving a card to the graveyard
-      if (yourPlayedCards.some(c => c.id === card.id)) {
-        // Move from your field to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setYourPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (opponentPlayedCards.some(c => c.id === card.id)) {
-        // Move from opponent's field to their graveyard
-        setOpponentGraveyard(prev => [...prev, card]);
-        setOpponentPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (playerHand.some(c => c.id === card.id)) {
-        // Move from your hand to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setPlayerHand(prev => prev.filter(c => c.id !== card.id));
-      } else if (yourManaZone.some(c => c.id === card.id)) {
-        // Move from your mana zone to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setYourManaZone(prev => prev.filter(c => c.id !== card.id));
+      return;
+    }
+
+    // Centralized logic for solo vs online
+    if (gameMode === 'online') {
+      switch (actionType) {
+        case 'play':
+          socket.emit('play_card', card.id, 'field');
+          break;
+        case 'playToMana':
+          socket.emit('play_card', card.id, 'mana');
+          break;
+        // Future online actions can be handled here
+        default:
+          break;
       }
-    } else if (actionType === 'play') {
-      // In solo mode, handle card play locally
-      if (gameMode === 'solo') {
+      return;
+    }
+
+    // --- Solo Mode Actions ---
+    // Most actions are only allowed on your turn
+    if (!isYourTurn && actionType !== 'block') {
+      return;
+    }
+
+    switch (actionType) {
+      case 'playToMana': {
+        const cardInHand = playerHand.find(c => c.id === card.id);
+        if (cardInHand) {
+          setPlayerHand(prev => prev.filter(c => c.id !== card.id));
+          setYourManaZone(prev => [...prev, card]);
+          setYourMaxMana(prev => prev + 1);
+          setMessage(`${card.name}をマナに置きました`);
+        }
+        break;
+      }
+      case 'play': {
+        const cardInHand = playerHand.find(c => c.id === card.id);
+        if (!cardInHand) break;
+
         if (yourCurrentMana >= card.manaCost) {
           setYourCurrentMana(prev => prev - card.manaCost);
           setPlayerHand(prev => prev.filter(c => c.id !== card.id));
-          
-          // If it's a creature, add to played cards with summoning sickness
+
           if (card.attack > 0 && card.defense > 0) {
             setYourPlayedCards(prev => [...prev, { ...card, canAttack: false, isTapped: false }]);
             setMessage(`${card.name}を召喚しました`);
           } else {
-            // For non-creature cards, handle their effects immediately
             handleCardEffect(card);
           }
         }
-      } else {
-        // Online mode: Emit socket event
-        socket.emit('play_card', card.id, 'field');
+        break;
       }
-    } else if (actionType === 'tap') {
-      // Handle tapping/untapping a card
-      if (yourPlayedCards.some(c => c.id === card.id)) {
-        setYourPlayedCards(prev => 
-          prev.map(c => 
-            c.id === card.id 
-              ? { ...c, isTapped: !c.isTapped } 
-              : c
-          )
-        );
-      }
-    } else if (actionType === 'attack') {
-      // In solo mode, handle attack locally
-      if (gameMode === 'solo') {
-        if (isYourTurn && (currentPhase === 'declare_attackers' || currentPhase === 'combat')) {
+      case 'attack': {
+        if (currentPhase === 'declare_attackers' || currentPhase === 'combat') {
           const myCard = yourPlayedCards.find(c => c.id === card.id);
           if (myCard && !myCard.isTapped && myCard.canAttack) {
             const newSelectedAttackers = new Map(selectedAttackers);
@@ -668,24 +673,10 @@ const App = () => {
             setSelectedAttackers(newSelectedAttackers);
           }
         }
-      } else {
-        // Online mode: Handle attack declaration
-        if (isYourTurn && currentPhase === 'declare_attackers') {
-          const myCard = yourPlayedCards.find(c => c.id === card.id);
-          if (myCard && !myCard.isTapped && myCard.canAttack) {
-            const newSelectedAttackers = new Map(selectedAttackers);
-            if (newSelectedAttackers.has(card.id)) {
-              newSelectedAttackers.delete(card.id);
-            } else {
-              newSelectedAttackers.set(card.id, card);
-            }
-            setSelectedAttackers(newSelectedAttackers);
-          }
-        }
+        break;
       }
-    } else if (actionType === 'block') {
-      // In solo mode, handle block locally
-      if (gameMode === 'solo') {
+      case 'block': {
+        // Block logic is an exception, happens on opponent's turn
         if (!isYourTurn && currentPhase === 'declare_blockers') {
           const opponentAttacker = opponentPlayedCards.find(c => c.id === card.id && attackingCreatures.some(a => a.attackerId === c.id));
           const myBlocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
@@ -700,7 +691,6 @@ const App = () => {
             }
             if (!newAssignments[selectedTarget].includes(card.id)) {
               newAssignments[selectedTarget].push(card.id);
-              // Tap the blocking creature
               setYourPlayedCards(prev => 
                 prev.map(c => 
                   c.id === card.id ? { ...c, isTapped: true } : c
@@ -710,127 +700,22 @@ const App = () => {
             setBlockingAssignments(newAssignments);
           }
         }
-      } else {
-        // Online mode: Handle blocking
-        if (!isYourTurn && currentPhase === 'declare_blockers') {
-          const opponentAttacker = opponentPlayedCards.find(c => c.id === card.id && attackingCreatures.some(a => a.attackerId === c.id));
-          const myBlocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
-
-          if (opponentAttacker) {
-            setSelectedTarget(card.id);
-            setTempSelectedBlocker(null);
-          } else if (myBlocker && selectedTarget) {
-            setTempSelectedBlocker(card.id);
-          }
-        }
+        break;
       }
-    } else if (actionType === 'click') {
-      // --- Effect Targeting Logic ---
-      if (isTargetingEffectRef.current) {
-        console.log('[App.js] Targeting effect active. Card clicked:', card);
-        // Only allow targeting opponent's played creatures
-        const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
-        if (targetCreature) {
-          console.log('[App.js] Valid target selected:', targetCreature);
-          console.log('[App.js] Emitting resolve_effect_target with:', {
-            sourceCardId: effectSourceCardId,
-            targetCardId: card.id,
-            effectType: effectTypeForTarget,
-            amount: effectAmountForTarget,
-          });
-          socket.emit('resolve_effect_target', {
-            sourceCardId: effectSourceCardId,
-            targetCardId: card.id,
-            effectType: effectTypeForTarget,
-            amount: effectAmountForTarget,
-          });
-          setIsTargetingEffect(false);
-          isTargetingEffectRef.current = false; // Update ref immediately
-          setEffectSourceCardId(null);
-          setEffectMessageForTarget(null);
-        } else {
-          console.log('Invalid target for effect: Not an opponent creature.', card);
-        }
-        return; // Prevent other click actions while targeting
-      }
-
-      // --- Attack Phase Logic ---
-      if (isYourTurn && currentPhase === 'declare_attackers') {
-        const myCard = yourPlayedCards.find(c => c.id === card.id);
-        console.log('Card clicked to attack: ', myCard);
-        if (myCard && !myCard.isTapped && myCard.canAttack) {
-          const newSelectedAttackers = new Map(selectedAttackers);
-          if (newSelectedAttackers.has(card.id)) {
-            newSelectedAttackers.delete(card.id);
-          } else {
-            newSelectedAttackers.set(card.id, card);
-          }
-          setSelectedAttackers(newSelectedAttackers);
-        }
-      }
-
-      // --- Block Phase Logic ---
-      if (!isYourTurn && currentPhase === 'declare_blockers') {
-        const opponentAttacker = opponentPlayedCards.find(c => c.id === card.id && attackingCreatures.some(a => a.attackerId === c.id));
-        const myBlocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
-
-        if (opponentAttacker) {
-          setSelectedTarget(card.id);
-          setTempSelectedBlocker(null); // 攻撃対象を選択したら仮ブロッカー選択をリセット
-        } else if (myBlocker) {
-          // 既に攻撃対象が選択されている場合のみ、ブロッカーを仮選択
-          if (selectedTarget) {
-            setTempSelectedBlocker(card.id);
-          }
-        }
-
-        // 攻撃対象と仮選択されたブロッカーの両方が存在する場合にブロックを確定
-        if (selectedTarget && tempSelectedBlocker) {
-          const newAssignments = { ...blockingAssignments };
-          if (!newAssignments[selectedTarget]) {
-            newAssignments[selectedTarget] = [];
-          }
-          if (!newAssignments[selectedTarget].includes(tempSelectedBlocker)) {
-            newAssignments[selectedTarget].push(tempSelectedBlocker);
-          }
-          setBlockingAssignments(newAssignments);
-          socket.emit('declare_blockers', newAssignments); // Send updates immediately
-          setSelectedTarget(null);
-          setTempSelectedBlocker(null); // ブロック割り当て後、仮選択をリセット
-        }
-      }
+      default:
+        break;
     }
   };
 
   const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => {
-      if (gameMode === 'solo') {
-        if (!isYourTurn) return;
-        const card = playerHand.find(c => c.id === item.id);
-        if (card) {
-          setPlayerHand(prev => prev.filter(c => c.id !== item.id));
-          setYourManaZone(prev => [...prev, card]);
-          setYourMaxMana(prev => prev + 1);
-          setMessage(`${card.name}をマナに置きました`);
-        }
-      } else {
-        socket.emit('play_card', item.id, 'mana');
-      }
-    },
+    drop: (item) => handleCardAction(item, 'playToMana'),
     collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
   }));
 
   const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => {
-      if (gameMode === 'solo') {
-        // The item from react-dnd is the full card object
-        handleCardAction(item, 'play');
-      } else {
-        socket.emit('play_card', item.id, 'field');
-      }
-    },
+    drop: (item) => handleCardAction(item, 'play'),
     collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
   }));
 
