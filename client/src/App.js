@@ -8,6 +8,7 @@ import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
 import Menu from './components/Menu'; // Menuコンポーネントをインポート
+import { allCards, getRandomCard } from './utils/cardData';
 
 import styles from './App.module.css';
 
@@ -125,15 +126,221 @@ const App = () => {
     });
   };
 
+  // Handle end of turn in solo mode
+  const endTurn = () => {
+    if (gameMode === 'solo') {
+      if (isYourTurn) {
+        // End player's turn, start AI's turn
+        setIsYourTurn(false);
+        setMessage('相手のターンです...');
+        setCurrentPhase('main_phase_1');
+        
+        // AI takes its turn after a short delay
+        setTimeout(aiTurn, 1000);
+      } else {
+        // End AI's turn, start player's turn
+        setIsYourTurn(true);
+        setMessage('あなたのターンです');
+        setCurrentPhase('main_phase_1');
+        
+        // Draw a card at the start of player's turn
+        if (playerDeckSize > 0) {
+          setPlayerDeckSize(prev => prev - 1);
+          setPlayerHand(prev => [...prev, getRandomCard()]);
+        }
+        
+        // Untap all player's cards at the start of turn
+        setYourPlayedCards(prev => 
+          prev.map(card => ({
+            ...card,
+            isTapped: false,
+            canAttack: true // Remove summoning sickness
+          }))
+        );
+      }
+    } else if (gameMode === 'online') {
+      // Existing online turn logic
+      socket.emit('end_turn');
+    }
+  };
+
+  // AI turn logic for solo mode
+  const aiTurn = () => {
+    if (isYourTurn) return; // Don't execute if it's not AI's turn
+    
+    // AI draws a card at the start of its turn
+    if (opponentDeckSize > 0) {
+      setOpponentDeckSize(prev => prev - 1);
+      setOpponentHand(prev => [...prev, getRandomCard()]);
+    }
+    
+    // Increment max mana (up to 10)
+    setOpponentMaxMana(prev => Math.min(prev + 1, 10));
+    setOpponentCurrentMana(prev => Math.min(prev + 1, 10));
+    
+    // AI plays cards if it can
+    const playableCards = opponentHand.filter(card => 
+      card.manaCost <= opponentCurrentMana
+    );
+    
+    // Sort cards by cost (cheapest first)
+    playableCards.sort((a, b) => a.manaCost - b.manaCost);
+    
+    // Play cards until out of mana or no more playable cards
+    let remainingMana = opponentCurrentMana;
+    const cardsToPlay = [];
+    
+    for (const card of playableCards) {
+      if (card.manaCost <= remainingMana) {
+        cardsToPlay.push(card);
+        remainingMana -= card.manaCost;
+      }
+    }
+    
+    // Update game state after a short delay for each card played
+    if (cardsToPlay.length > 0) {
+      let delay = 1000;
+      
+      cardsToPlay.forEach((card, index) => {
+        setTimeout(() => {
+          // Remove card from AI's hand
+          setOpponentHand(prev => prev.filter(c => c.id !== card.id));
+          
+          // Add to played cards if it's a creature
+          if (card.attack > 0 && card.defense > 0) {
+            const cardWithSummoningSickness = {
+              ...card,
+              canAttack: false, // Summoning sickness
+              isTapped: false
+            };
+            setOpponentPlayedCards(prev => [...prev, cardWithSummoningSickness]);
+            setMessage(`相手が${card.name}を召喚しました！`);
+            
+            // Handle card effects on summon
+            if (card.effect === "Deal 2 damage to opponent creature") {
+              // Simple AI: target a random player creature if any exist
+              if (yourPlayedCards.length > 0) {
+                const targetIndex = Math.floor(Math.random() * yourPlayedCards.length);
+                const target = yourPlayedCards[targetIndex];
+                
+                setTimeout(() => {
+                  setYourPlayedCards(prev => 
+                    prev.map(c => 
+                      c.id === target.id 
+                        ? { ...c, defense: c.defense - 2 } 
+                        : c
+                    ).filter(c => c.defense > 0)
+                  );
+                  setMessage(`相手の${card.name}が${target.name}に2ダメージ与えました！`);
+                }, 500);
+              }
+            }
+          } else if (card.effect) {
+            // Handle spell effects
+            setMessage(`相手が${card.name}を使用しました！`);
+            
+            if (card.effect === "Draw 1 card") {
+              // AI draws a card
+              if (opponentDeckSize > 0) {
+                setOpponentDeckSize(prev => prev - 1);
+                setOpponentHand(prev => [...prev, getRandomCard()]);
+              }
+            }
+          }
+          
+          // Update AI's mana
+          setOpponentCurrentMana(prev => prev - card.manaCost);
+          
+          // If this is the last card, end AI's turn after a delay
+          if (index === cardsToPlay.length - 1) {
+            setTimeout(() => {
+              // AI attacks with all untapped creatures
+              let totalAttack = 0;
+              const updatedOpponentPlayedCards = opponentPlayedCards.map(card => {
+                if (!card.isTapped) {
+                  totalAttack += card.attack;
+                  return { ...card, isTapped: true };
+                }
+                return card;
+              });
+              
+              if (totalAttack > 0) {
+                setYourLife(prev => Math.max(0, prev - totalAttack));
+                setMessage(`相手が${totalAttack}のダメージを与えました！`);
+                setOpponentPlayedCards(updatedOpponentPlayedCards);
+              }
+              
+              // End AI's turn after attacking
+              setTimeout(() => endTurn(), 1500);
+            }, 1000);
+          }
+        }, delay);
+        
+        delay += 1000; // Add delay between card plays
+      });
+    } else {
+      // No cards played, end turn after a delay
+      setTimeout(() => {
+        // AI still attacks with untapped creatures if possible
+        let totalAttack = 0;
+        const updatedOpponentPlayedCards = opponentPlayedCards.map(card => {
+          if (!card.isTapped) {
+            totalAttack += card.attack;
+            return { ...card, isTapped: true };
+          }
+          return card;
+        });
+        
+        if (totalAttack > 0) {
+          setYourLife(prev => Math.max(0, prev - totalAttack));
+          setMessage(`相手が${totalAttack}のダメージを与えました！`);
+          setOpponentPlayedCards(updatedOpponentPlayedCards);
+          
+          setTimeout(() => endTurn(), 1500);
+        } else {
+          setMessage('相手は何もせずにターンを終了しました');
+          setTimeout(() => endTurn(), 1000);
+        }
+      }, 1000);
+    }
+  };
+
   const startSoloGame = () => {
     console.log('Starting solo game...');
     setGameMode('solo');
     setMessage('ソロモードを準備中...');
-    // Add solo game initialization here
-    setTimeout(() => {
-      setGameStarted(true);
-      setMessage('ソロモードでゲームを開始します');
-    }, 1000);
+    
+    // Initialize player's hand with random cards
+    const initialPlayerHand = Array(5).fill().map(() => getRandomCard());
+    
+    // Initialize AI's hand with random cards
+    const initialAIHand = Array(5).fill().map(() => getRandomCard());
+    
+    // Set initial game state
+    setPlayerHand(initialPlayerHand);
+    setPlayerDeckSize(20);
+    setYourPlayedCards([]);
+    setYourManaZone([]);
+    setYourMaxMana(0);
+    setYourCurrentMana(0);
+    setYourLife(20);
+    
+    // Set up AI opponent
+    setOpponentHand(initialAIHand);
+    setOpponentPlayedCards([]);
+    setOpponentManaZone([]);
+    setOpponentDeckSize(20);
+    setOpponentMaxMana(0);
+    setOpponentCurrentMana(0);
+    setOpponentLife(20);
+    
+    // Start with player's turn
+    setIsYourTurn(true);
+    setCurrentPhase('main_phase_1');
+    
+    // Start the game
+    setGameStarted(true);
+    setMessage('ソロモードを開始します。あなたのターンです。');
   };
   const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
   const [opponentHand, setOpponentHand] = useState([]);
