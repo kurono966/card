@@ -696,13 +696,13 @@ const App = () => {
     accept: ItemTypes.CARD,
     drop: (item) => handleCardAction(item, 'playToMana'),
     collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
-  }));
+  }), [gameMode, isYourTurn, playerHand, yourCurrentMana]);
 
   const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
     drop: (item) => handleCardAction(item, 'play'),
     collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
-  }));
+  }), [gameMode, isYourTurn, playerHand, yourCurrentMana]);
 
   if (!gameStarted) {
     return (
