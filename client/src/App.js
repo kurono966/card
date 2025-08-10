@@ -8,7 +8,7 @@ import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
 import Menu from './components/Menu';
-import { allCards, getRandomCard } from './utils/cardData'; // Assuming this exists and works
+import { allCards, getRandomCard } from './utils/cardData';
 
 import styles from './App.module.css';
 
@@ -44,12 +44,12 @@ const initialState = {
 
   selectedCardDetail: null,
   selectedAttackers: new Map(),
-  // ... other UI states can be added here
 };
 
 function gameReducer(state, action) {
   switch (action.type) {
     case 'SET_GAME_STATE':
+      // This is for wholesale updates, primarily from the server
       return { ...state, ...action.payload };
 
     case 'START_SOLO_GAME': {
@@ -79,11 +79,11 @@ function gameReducer(state, action) {
     }
 
     case 'PLAY_CARD': {
-      if (!state.isYourTurn) return state; // Not your turn
+      if (!state.isYourTurn) return state;
 
       const playerState = state.player;
       const cardToPlay = playerState.hand.find(c => c.id === action.payload.cardId);
-      if (!cardToPlay) return state; // Card not in hand
+      if (!cardToPlay) return state;
 
       if (action.payload.target === 'mana') {
         return {
@@ -99,7 +99,6 @@ function gameReducer(state, action) {
         if (playerState.currentMana < cardToPlay.manaCost) {
           return { ...state, message: 'マナが足りません' };
         }
-        // TODO: Handle card effects
         return {
           ...state,
           message: `${cardToPlay.name}をプレイしました。`,
@@ -113,8 +112,6 @@ function gameReducer(state, action) {
       }
       return state;
     }
-
-    // TODO: Add other actions like NEXT_PHASE, DECLARE_ATTACK, END_TURN
 
     default:
       return state;
@@ -132,25 +129,21 @@ const socket = io(serverUrl, { autoConnect: false });
 const App = () => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Unified dispatcher
   const handleDispatch = (action) => {
     if (state.gameMode === 'online') {
       socket.emit('game_action', action);
-    }
-    else {
+    } else {
       dispatch(action);
     }
   };
 
-  // Effect for managing socket connection and listeners
   useEffect(() => {
     if (state.gameMode === 'online') {
       socket.connect();
       socket.on('game_state', (serverState) => {
         dispatch({ type: 'SET_GAME_STATE', payload: serverState });
       });
-    }
-    else {
+    } else {
       socket.disconnect();
     }
     return () => {
@@ -159,22 +152,21 @@ const App = () => {
     }
   }, [state.gameMode]);
 
-  // --- Event Handlers ---
   const handleStartSoloGame = () => dispatch({ type: 'START_SOLO_GAME' });
   const handleStartOnlineGame = () => dispatch({ type: 'SET_GAME_STATE', payload: { gameMode: 'online', message: 'サーバーに接続中...' } });
 
-  // --- Drop Handlers ---
-  const [, dropMana] = useDrop(() => ({
+  const [{ isOverYourMana }, dropMana] = useDrop(() => ({
     accept: 'card',
     drop: (item) => handleDispatch({ type: 'PLAY_CARD', payload: { cardId: item.id, target: 'mana' } }),
-  }), [state.gameMode]); // Dependency array is crucial
-
-  const [, dropField] = useDrop(() => ({
-    accept: 'card',
-    drop: (item) => handleDispatch({ type: 'PLAY_CARD', payload: { cardId: item.id, target: 'field' } }),
+    collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
   }), [state.gameMode]);
 
-  // --- Render Logic ---
+  const [{ isOverYourField }, dropField] = useDrop(() => ({
+    accept: 'card',
+    drop: (item) => handleDispatch({ type: 'PLAY_CARD', payload: { cardId: item.id, target: 'field' } }),
+    collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
+  }), [state.gameMode]);
+
   if (!state.gameStarted) {
     return <Menu onStartOnlineGame={handleStartOnlineGame} onStartSoloGame={handleStartSoloGame} />;
   }
@@ -191,8 +183,12 @@ const App = () => {
           <div className={styles.opponentArea}>
             <h3>Opponent</h3>
             <p>Life: {state.opponent.life} | Mana: {state.opponent.currentMana}/{state.opponent.maxMana}</p>
-            <div className={styles.playedCardsArea}>
-              {state.opponent.playedCards.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
+            <div className={styles.opponentFieldManaContainer}>
+                <h4>Played Cards:</h4>
+                <div className={styles.playedCardsArea}>
+                  {state.opponent.playedCards.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
+                </div>
+                {/* Placeholder for opponent's mana/graveyard if needed */}
             </div>
           </div>
 
@@ -200,30 +196,33 @@ const App = () => {
           <div className={styles.yourArea}>
             <h3>You</h3>
             <p>Life: {state.player.life} | Mana: {state.player.currentMana}/{state.player.maxMana}</p>
-            <div ref={dropField} className={styles.playedCardsArea}>
+            <h4>Played Cards:</h4>
+            <div ref={dropField} className={`${styles.playedCardsArea} ${isOverYourField ? styles.playedCardsAreaOver : ''}`}>
               {state.player.playedCards.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
             </div>
-          </div>
-        </div>
 
-        <div className={styles.bottomArea}>
-            <div ref={dropMana} className={styles.manaZoneContainer}>
+            <div className={styles.manaHandContainer}>
+              <div className={styles.manaZoneContainer}>
                 <h4>Mana Zone</h4>
-                <div className={styles.manaZone}>
-                    {state.player.manaZone.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
+                <div ref={dropMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
+                  {state.player.manaZone.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
                 </div>
-            </div>
-            <div className={styles.handContainer}>
+              </div>
+
+              <div className={styles.handContainer}>
                 <h3>Your Hand</h3>
                 <div className={styles.hand}>
-                    {state.player.hand.map(card => <Card key={card.id} {...card} />)}
+                  {state.player.hand.map(card => <Card key={card.id} {...card} />)}
                 </div>
+              </div>
             </div>
-            <div className={styles.controls}>
+
+            <div className={styles.deckEndTurnContainer}>
                 <Deck deckSize={state.player.deckSize} />
                 <Graveyard cards={state.player.graveyard} />
                 <button className={styles.endTurnButton}>End Turn</button>
             </div>
+          </div>
         </div>
 
         {state.selectedCardDetail && <CardDetail card={state.selectedCardDetail} />}
