@@ -8,6 +8,7 @@ import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
 import Menu from './components/Menu'; // Menuコンポーネントをインポート
+import Game from './utils/gameLogic'; // Import the game logic
 
 import styles from './App.module.css';
 
@@ -69,6 +70,7 @@ const App = () => {
   const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
   const [message, setMessage] = useState('Neocardにようこそ！');
   const [socketConnected, setSocketConnected] = useState(false);
+  const [soloGame, setSoloGame] = useState(null);
 
   useEffect(() => {
     // Set up event listeners when component mounts
@@ -129,12 +131,39 @@ const App = () => {
     console.log('Starting solo game...');
     setGameMode('solo');
     setMessage('ソロモードを準備中...');
-    // Add solo game initialization here
-    setTimeout(() => {
-      setGameStarted(true);
-      setMessage('ソロモードでゲームを開始します');
-    }, 1000);
+    const game = new Game();
+    setSoloGame(game);
+
+    game.setOnStateChange((state) => {
+      console.log('[App.js] Received game state from solo game:', state);
+      setPlayerHand(state.yourHand || []);
+      setPlayerDeckSize(state.yourDeckSize);
+      setYourPlayedCards(state.yourPlayedCards || []);
+      setYourManaZone(state.yourManaZone || []);
+      setYourMaxMana(state.yourMaxMana);
+      setYourCurrentMana(state.yourCurrentMana);
+      setYourLife(state.yourLife);
+      setPlayerGraveyard(state.yourGraveyard || []);
+
+      setOpponentPlayedCards(state.opponentPlayedCards || []);
+      setOpponentManaZone(state.opponentManaZone || []);
+      setOpponentDeckSize(state.opponentDeckSize);
+      setOpponentMaxMana(state.opponentMaxMana);
+      setOpponentCurrentMana(state.opponentCurrentMana);
+      setOpponentLife(state.opponentLife);
+      setOpponentGraveyard(state.opponentGraveyard || []);
+
+      setIsYourTurn(state.isYourTurn);
+      setCurrentPhase(state.currentPhase);
+      setAttackingCreatures(state.attackingCreatures || []);
+      setBlockingAssignments(state.blockingAssignments || {});
+    });
+    
+    game.updateGameState();
+    setGameStarted(true);
+    setMessage('ソロモードでゲームを開始します');
   };
+
   const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
   const [opponentHand, setOpponentHand] = useState([]);
   const [playerGraveyard, setPlayerGraveyard] = useState([]);
@@ -179,6 +208,7 @@ const App = () => {
   }, [isYourTurn]);
 
   useEffect(() => {
+    if (gameMode !== 'online') return;
     socket.on('connect', () => {
       setMessage('Connected to server!');
       socket.emit('request_game_state');
@@ -257,9 +287,13 @@ const App = () => {
       socket.off('effect_triggered');
       socket.off('request_target_for_effect'); // Clean up new listener
     };
-  }, []); // Add empty dependency array and closing bracket
+  }, [gameMode]); // Add empty dependency array and closing bracket
 
   const handleNextPhase = () => {
+    if (gameMode === 'solo') {
+      soloGame.nextPhase();
+      return;
+    }
     // 自分のターンかどうかで処理を分岐
     if (isYourTurnRef.current) {
       // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
@@ -384,13 +418,25 @@ const App = () => {
 
   const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'mana'),
+    drop: (item) => {
+        if (gameMode === 'solo') {
+            soloGame.playCard('player', item.id, 'mana');
+        } else {
+            socket.emit('play_card', item.id, 'mana');
+        }
+    },
     collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
   }));
 
   const [{ isOverYourField }, dropYourField] = useDrop(() => ({
     accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'field'),
+    drop: (item) => {
+        if (gameMode === 'solo') {
+            soloGame.playCard('player', item.id, 'field');
+        } else {
+            socket.emit('play_card', item.id, 'field');
+        }
+    },
     collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
   }));
 
