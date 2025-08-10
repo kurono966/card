@@ -1,8 +1,6 @@
-
 import { allCards } from './cardData';
 
-// Helper function to shuffle an array
-const shuffle = (array) => {
+const shuffleArray = (array) => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
@@ -10,109 +8,246 @@ const shuffle = (array) => {
   return array;
 };
 
+const GAME_PHASES = {
+  MAIN_PHASE_1: 'main_phase_1',
+  DECLARE_ATTACKERS: 'declare_attackers',
+  DECLARE_BLOCKERS: 'declare_blockers',
+  COMBAT_DAMAGE: 'combat_damage',
+  MAIN_PHASE_2: 'main_phase_2',
+  END_PHASE: 'end_phase',
+};
+
 class Game {
   constructor() {
     this.state = {
-      player: {
-        deck: [],
-        hand: [],
-        playedCards: [],
-        manaZone: [],
-        graveyard: [],
-        life: 20,
-        maxMana: 0,
-        currentMana: 0,
-      },
-      opponent: {
-        deck: [],
-        hand: [],
-        playedCards: [],
-        manaZone: [],
-        graveyard: [],
-        life: 20,
-        maxMana: 0,
-        currentMana: 0,
-      },
+      player: null,
+      opponent: null,
       isPlayerTurn: true,
-      currentPhase: 'main_phase_1', // main_phase_1, declare_attackers, declare_blockers, main_phase_2, end_phase
+      currentPhase: GAME_PHASES.MAIN_PHASE_1,
       attackingCreatures: [],
       blockingAssignments: {},
+      gameActive: false,
     };
-    this.initializeDecks();
+    this.initializeGame();
   }
 
-  initializeDecks() {
-    const createDeck = () => {
-      const deck = [];
-      for (let i = 0; i < 40; i++) {
-        const cardTemplate = allCards[Math.floor(Math.random() * allCards.length)];
-        deck.push({ ...cardTemplate, id: `card_${i}_${Date.now()}_${Math.random()}` });
-      }
-      return shuffle(deck);
-    };
+  initializeGame() {
+    this.state.player = this.initializePlayerState('player');
+    this.state.opponent = this.initializePlayerState('opponent');
 
-    this.state.player.deck = createDeck();
-    this.state.opponent.deck = createDeck();
-
-    // Draw initial hands
     for (let i = 0; i < 5; i++) {
       this.drawCard('player');
       this.drawCard('opponent');
     }
+
+    this.state.isPlayerTurn = true;
+    this.state.gameActive = true;
+    this.updateGameState();
+  }
+
+  initializePlayerState(playerType) {
+    let deck = [];
+    const deckSize = 40;
+
+    for (let i = 0; i < deckSize; i++) {
+      const randomIndex = Math.floor(Math.random() * allCards.length);
+      const card = { ...allCards[randomIndex], id: `${allCards[randomIndex].id}_${playerType}_${i}`, isTapped: false };
+      deck.push(card);
+    }
+
+    deck = shuffleArray(deck);
+
+    return {
+      deck: deck,
+      hand: [],
+      played: [],
+      manaZone: [],
+      graveyard: [],
+      maxMana: 1,
+      currentMana: 1,
+      isTurn: false,
+      manaPlayedThisTurn: false,
+      drawnThisTurn: false,
+      life: 20,
+    };
   }
 
   drawCard(playerType) {
     const player = this.state[playerType];
     if (player.deck.length > 0) {
-      const card = player.deck.pop();
+      const card = player.deck.shift();
       player.hand.push(card);
     }
   }
 
-  playCard(playerType, cardId, zone) {
+  playCard(playerType, cardId, playType) {
     const player = this.state[playerType];
     const cardIndex = player.hand.findIndex(c => c.id === cardId);
     if (cardIndex === -1) return;
 
-    const card = player.hand[cardIndex];
+    const [card] = player.hand.splice(cardIndex, 1);
 
-    if (zone === 'mana') {
-      player.hand.splice(cardIndex, 1);
+    if (playType === 'mana') {
+      if (player.manaPlayedThisTurn) {
+        player.hand.push(card);
+        return;
+      }
       player.manaZone.push(card);
       player.maxMana++;
       player.currentMana++;
-    } else if (zone === 'field') {
+      player.manaPlayedThisTurn = true;
+    } else if (playType === 'field') {
       if (player.currentMana >= card.manaCost) {
-        player.hand.splice(cardIndex, 1);
-        player.playedCards.push(card);
         player.currentMana -= card.manaCost;
+        card.canAttack = false; // Summoning sickness
+        player.played.push(card);
+      } else {
+        player.hand.push(card);
       }
     }
     this.updateGameState();
   }
 
   nextPhase() {
-    // Simplified phase progression for now
-    if (this.state.isPlayerTurn) {
-        if (this.state.currentPhase === 'main_phase_1') {
-            this.state.currentPhase = 'declare_attackers';
-        } else if (this.state.currentPhase === 'declare_attackers') {
-            this.state.currentPhase = 'end_phase';
-        } else if (this.state.currentPhase === 'end_phase') {
-            this.endTurn();
+    if (!this.state.gameActive) return;
+
+    switch (this.state.currentPhase) {
+      case GAME_PHASES.MAIN_PHASE_1:
+        this.state.currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
+        break;
+      case GAME_PHASES.DECLARE_ATTACKERS:
+        if (this.state.attackingCreatures.length === 0) {
+          this.state.currentPhase = GAME_PHASES.MAIN_PHASE_2;
+        } else {
+          this.state.currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
         }
+        break;
+      case GAME_PHASES.DECLARE_BLOCKERS:
+        this.resolveCombatDamage();
+        this.state.currentPhase = GAME_PHASES.MAIN_PHASE_2;
+        break;
+      case GAME_PHASES.MAIN_PHASE_2:
+        this.state.currentPhase = GAME_PHASES.END_PHASE;
+        break;
+      case GAME_PHASES.END_PHASE:
+        this.endCurrentTurnAndStartNext();
+        break;
+      default:
+        break;
     }
     this.updateGameState();
   }
 
-  endTurn() {
+  declareAttackers(attackers) {
+    if (!this.state.isPlayerTurn || this.state.currentPhase !== GAME_PHASES.DECLARE_ATTACKERS) return;
+
+    this.state.attackingCreatures = [];
+    attackers.forEach(attackerId => {
+      const attackerCard = this.state.player.played.find(c => c.id === attackerId);
+      if (attackerCard && !attackerCard.isTapped && attackerCard.canAttack) {
+        attackerCard.isTapped = true;
+        this.state.attackingCreatures.push({ attackerId: attackerId, targetId: 'player' });
+      }
+    });
+    this.updateGameState();
+  }
+
+  declareBlockers(assignments) {
+    if (this.state.isPlayerTurn || this.state.currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) return;
+    this.state.blockingAssignments = assignments;
+    this.updateGameState();
+  }
+
+  resolveCombatDamage() {
+    const attackerPlayer = this.state.isPlayerTurn ? this.state.player : this.state.opponent;
+    const opponentPlayer = this.state.isPlayerTurn ? this.state.opponent : this.state.player;
+
+    let creatureStates = {};
+    [...attackerPlayer.played, ...opponentPlayer.played].forEach(c => {
+      creatureStates[c.id] = { defense: c.defense };
+    });
+
+    this.calculateDamageStep(true, attackerPlayer, opponentPlayer, creatureStates);
+    this.cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates);
+
+    this.calculateDamageStep(false, attackerPlayer, opponentPlayer, creatureStates);
+    this.cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates);
+
+    this.state.attackingCreatures.forEach(attackInfo => {
+      const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+      if (attackerCard && (!this.state.blockingAssignments[attackInfo.attackerId] || this.state.blockingAssignments[attackInfo.attackerId].length === 0)) {
+        opponentPlayer.life -= attackerCard.attack;
+        if (opponentPlayer.life <= 0) {
+          this.state.gameActive = false;
+        }
+      }
+    });
+
+    this.state.attackingCreatures = [];
+    this.state.blockingAssignments = {};
+  }
+
+  calculateDamageStep(isFirstStrikePhase, attackerPlayer, opponentPlayer, creatureStates) {
+    this.state.attackingCreatures.forEach(attackInfo => {
+      const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+      if (!attackerCard || (isFirstStrikePhase && !attackerCard.abilities.includes('firstStrike'))) {
+        return;
+      }
+
+      const blockers = this.state.blockingAssignments[attackInfo.attackerId] || [];
+      if (blockers.length > 0) {
+        let remainingDamage = attackerCard.attack;
+
+        blockers.forEach(blockerId => {
+          const blockerCard = opponentPlayer.played.find(c => c.id === blockerId);
+          if (blockerCard && remainingDamage > 0) {
+            const damageToBlocker = Math.min(remainingDamage, creatureStates[blockerId].defense);
+            creatureStates[blockerId].defense -= damageToBlocker;
+            remainingDamage -= damageToBlocker;
+          }
+        });
+
+        blockers.forEach(blockerId => {
+          const blockerCard = opponentPlayer.played.find(c => c.id === blockerId);
+          if (blockerCard && (!isFirstStrikePhase || blockerCard.abilities.includes('firstStrike'))) {
+            creatureStates[attackerCard.id].defense -= blockerCard.attack;
+          }
+        });
+      }
+    });
+  }
+
+  cleanupDestroyedCreatures(attackerPlayer, opponentPlayer, creatureStates) {
+    const destroyedAttackerCreatures = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense <= 0);
+    destroyedAttackerCreatures.forEach(card => attackerPlayer.graveyard.push(card));
+    attackerPlayer.played = attackerPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
+
+    const destroyedOpponentCreatures = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense <= 0);
+    destroyedOpponentCreatures.forEach(card => opponentPlayer.graveyard.push(card));
+    opponentPlayer.played = opponentPlayer.played.filter(c => creatureStates[c.id] && creatureStates[c.id].defense > 0);
+  }
+
+  endCurrentTurnAndStartNext() {
+    const currentPlayer = this.state.isPlayerTurn ? this.state.player : this.state.opponent;
+    currentPlayer.isTurn = false;
+
     this.state.isPlayerTurn = !this.state.isPlayerTurn;
-    this.state.currentPhase = 'main_phase_1';
-    const currentPlayer = this.state.isPlayerTurn ? 'player' : 'opponent';
-    this.drawCard(currentPlayer);
-    this.state[currentPlayer].maxMana++;
-    this.state[currentPlayer].currentMana = this.state[currentPlayer].maxMana;
-    
+    const nextPlayer = this.state.isPlayerTurn ? this.state.player : this.state.opponent;
+
+    nextPlayer.isTurn = true;
+    nextPlayer.currentMana = nextPlayer.maxMana;
+    nextPlayer.manaPlayedThisTurn = false;
+    nextPlayer.drawnThisTurn = false;
+
+    nextPlayer.played.forEach(card => {
+      card.isTapped = false;
+      card.canAttack = true;
+    });
+
+    this.drawCard(this.state.isPlayerTurn ? 'player' : 'opponent');
+
+    this.state.currentPhase = GAME_PHASES.MAIN_PHASE_1;
+
     if (!this.state.isPlayerTurn) {
       this.runOpponentAI();
     }
@@ -120,11 +255,10 @@ class Game {
   }
 
   runOpponentAI() {
-    // Simple AI: play a card to mana, then play a creature if possible
     const opponent = this.state.opponent;
 
     // Play a card to mana
-    if (opponent.hand.length > 0) {
+    if (opponent.hand.length > 0 && !opponent.manaPlayedThisTurn) {
       const cardToPlayAsMana = opponent.hand[0];
       this.playCard('opponent', cardToPlayAsMana.id, 'mana');
     }
@@ -136,29 +270,29 @@ class Game {
       this.playCard('opponent', creatureToPlay.id, 'field');
     }
 
-    // Simple attack logic: attack with all available creatures
-    this.state.attackingCreatures = this.state.opponent.playedCards.map(c => ({ attackerId: c.id, targetId: 'player' }));
+    // Attack with all available creatures
+    const attackers = opponent.played.filter(c => !c.isTapped && c.canAttack).map(c => c.id);
+    this.declareAttackers(attackers);
 
-
-    // End turn after a delay
-    setTimeout(() => this.endTurn(), 1000);
+    this.nextPhase(); // Move to block phase
+    this.nextPhase(); // Move to combat
+    this.nextPhase(); // Move to main phase 2
+    this.nextPhase(); // End turn
   }
 
-
-  // This method will be called to get the current state for the UI
   getGameStateForApp() {
     const { player, opponent, isPlayerTurn, currentPhase, attackingCreatures, blockingAssignments } = this.state;
     return {
       yourHand: player.hand,
       yourDeckSize: player.deck.length,
-      yourPlayedCards: player.playedCards,
+      yourPlayedCards: player.played,
       yourManaZone: player.manaZone,
       yourMaxMana: player.maxMana,
       yourCurrentMana: player.currentMana,
       yourLife: player.life,
       yourGraveyard: player.graveyard,
 
-      opponentPlayedCards: opponent.playedCards,
+      opponentPlayedCards: opponent.played,
       opponentManaZone: opponent.manaZone,
       opponentDeckSize: opponent.deck.length,
       opponentMaxMana: opponent.maxMana,
@@ -173,7 +307,6 @@ class Game {
     };
   }
 
-  // This will be a placeholder for now
   updateGameState() {
     if (this.onStateChange) {
       this.onStateChange(this.getGameStateForApp());
