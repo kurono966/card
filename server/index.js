@@ -123,9 +123,16 @@ function startGame(player1Id, player2Id) {
   games[gameId] = game;
 
   // Assign gameId to sockets
-  io.sockets.sockets.get(player1Id)?.gameId = gameId;
+  const player1Socket = io.sockets.sockets.get(player1Id);
+  if (player1Socket) {
+    player1Socket.gameId = gameId;
+  }
+  
   if (player2Id !== AI_PLAYER_ID) {
-    io.sockets.sockets.get(player2Id)?.gameId = gameId;
+    const player2Socket = io.sockets.sockets.get(player2Id);
+    if (player2Socket) {
+        player2Socket.gameId = gameId;
+    }
   }
 
   console.log(`[Game] Game ${gameId} created.`);
