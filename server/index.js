@@ -455,6 +455,20 @@ io.on('connection', (socket) => {
         case GAME_PHASES.DECLARE_BLOCKERS:
             resolveCombat(gameId);
             game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
+
+            // If it's still the AI's turn after combat, automatically finish the turn
+            const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
+            if (currentPlayerId === AI_PLAYER_ID) {
+                console.log(`[AI] [Game ${gameId}] Combat resolved, moving to end phase.`);
+                game.currentPhase = GAME_PHASES.END_PHASE;
+                emitFullGameState(gameId); // Show end phase briefly
+                
+                // Use setTimeout to avoid blocking and give a sense of flow
+                setTimeout(() => {
+                    endCurrentTurnAndStartNext(gameId);
+                }, 1000); // 1 second delay before starting human turn
+                return; // Important to return here
+            }
             break;
         case GAME_PHASES.MAIN_PHASE_2:
             game.currentPhase = GAME_PHASES.END_PHASE;
