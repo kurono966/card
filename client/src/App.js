@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import io from 'socket.io-client';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -7,558 +7,227 @@ import Card from './components/Card';
 import Deck from './components/Deck';
 import CardDetail from './components/CardDetail';
 import Graveyard from './components/Graveyard';
-import Menu from './components/Menu'; // Menuコンポーネントをインポート
+import Menu from './components/Menu';
+import { allCards, getRandomCard } from './utils/cardData'; // Assuming this exists and works
 
 import styles from './App.module.css';
 
-// Determine the server URL based on the current environment
-const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const serverUrl = isLocalDevelopment 
-  ? 'http://localhost:3001' 
-  : 'https://neocard-server.onrender.com';
+// --- Game Logic and Reducer ---
 
-console.log(`Connecting to ${isLocalDevelopment ? 'local' : 'remote'} server:`, serverUrl);
+const initialState = {
+  gameStarted: false,
+  gameMode: null, // 'online' | 'solo'
+  message: 'Neocardにようこそ！',
+  isYourTurn: false,
+  currentPhase: 'main_phase_1',
+  
+  player: {
+    hand: [],
+    deckSize: 0,
+    graveyard: [],
+    playedCards: [],
+    manaZone: [],
+    maxMana: 0,
+    currentMana: 0,
+    life: 20,
+  },
+  opponent: {
+    hand: [],
+    deckSize: 0,
+    graveyard: [],
+    playedCards: [],
+    manaZone: [],
+    maxMana: 0,
+    currentMana: 0,
+    life: 20,
+  },
 
-// Initialize socket with autoConnect set to false
-const socket = io(serverUrl, {
-  reconnection: true,
-  reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 10000,
-  timeout: 20000,
-  withCredentials: true,
-  // Try both transports
-  transports: ['polling', 'websocket'],
-  // Don't connect automatically - we'll connect manually after setting up handlers
-  autoConnect: false,
-  // Add query parameters for debugging
-  query: {
-    clientType: 'web',
-    version: '1.0.0'
-  }
-});
-
-// Add detailed logging for all events
-const events = [
-  'connect',
-  'connect_error',
-  'connect_timeout',
-  'reconnect',
-  'reconnect_attempt',
-  'reconnecting',
-  'reconnect_error',
-  'reconnect_failed',
-  'disconnect',
-  'error'
-];
-
-events.forEach(event => {
-  socket.on(event, (data) => {
-    console.log(`[Socket.io] ${event}`, data || '');
-  });
-});
-
-
-
-const ItemTypes = {
-  CARD: 'card',
+  selectedCardDetail: null,
+  selectedAttackers: new Map(),
+  // ... other UI states can be added here
 };
 
+function gameReducer(state, action) {
+  switch (action.type) {
+    case 'SET_GAME_STATE':
+      return { ...state, ...action.payload };
+
+    case 'START_SOLO_GAME': {
+      const pHand = Array(5).fill().map(getRandomCard).map((c, i) => ({ ...c, id: `p-${i}`}));
+      const oHand = Array(5).fill().map(getRandomCard).map((c, i) => ({ ...c, id: `o-${i}`}));
+      return {
+        ...initialState,
+        gameStarted: true,
+        gameMode: 'solo',
+        isYourTurn: true,
+        message: 'ソロモード開始！ あなたのターンです。',
+        player: {
+          ...initialState.player,
+          hand: pHand,
+          deckSize: 20,
+          maxMana: 1,
+          currentMana: 1,
+        },
+        opponent: {
+          ...initialState.opponent,
+          hand: oHand,
+          deckSize: 20,
+          maxMana: 1,
+          currentMana: 1,
+        },
+      };
+    }
+
+    case 'PLAY_CARD': {
+      if (!state.isYourTurn) return state; // Not your turn
+
+      const playerState = state.player;
+      const cardToPlay = playerState.hand.find(c => c.id === action.payload.cardId);
+      if (!cardToPlay) return state; // Card not in hand
+
+      if (action.payload.target === 'mana') {
+        return {
+          ...state,
+          player: {
+            ...playerState,
+            hand: playerState.hand.filter(c => c.id !== action.payload.cardId),
+            manaZone: [...playerState.manaZone, cardToPlay],
+            maxMana: playerState.maxMana + 1,
+          }
+        }
+      } else if (action.payload.target === 'field') {
+        if (playerState.currentMana < cardToPlay.manaCost) {
+          return { ...state, message: 'マナが足りません' };
+        }
+        // TODO: Handle card effects
+        return {
+          ...state,
+          message: `${cardToPlay.name}をプレイしました。`,
+          player: {
+            ...playerState,
+            hand: playerState.hand.filter(c => c.id !== action.payload.cardId),
+            playedCards: [...playerState.playedCards, { ...cardToPlay, isTapped: false, canAttack: false }],
+            currentMana: playerState.currentMana - cardToPlay.manaCost,
+          }
+        }
+      }
+      return state;
+    }
+
+    // TODO: Add other actions like NEXT_PHASE, DECLARE_ATTACK, END_TURN
+
+    default:
+      return state;
+  }
+}
+
+// --- Socket and App Component ---
+
+const serverUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3001'
+  : 'https://neocard-server.onrender.com';
+
+const socket = io(serverUrl, { autoConnect: false });
+
 const App = () => {
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
-  const [message, setMessage] = useState('Neocardにようこそ！');
-  const [socketConnected, setSocketConnected] = useState(false);
+  const [state, dispatch] = useReducer(gameReducer, initialState);
 
+  // Unified dispatcher
+  const handleDispatch = (action) => {
+    if (state.gameMode === 'online') {
+      socket.emit('game_action', action);
+    }
+    else {
+      dispatch(action);
+    }
+  };
+
+  // Effect for managing socket connection and listeners
   useEffect(() => {
-    // Set up event listeners when component mounts
-    const handleConnect = () => {
-      console.log('✅ Connected to server with ID:', socket.id);
-      console.log('Transport:', socket.io.engine.transport.name);
-      setMessage('接続されました。ゲームを開始します...');
-      setSocketConnected(true);
-    };
-
-    const handleConnectError = (error) => {
-      console.error('❌ Connection failed:', error.message);
-      console.log('Socket details:', {
-        connected: socket.connected,
-        disconnected: socket.disconnected,
-        id: socket.id
+    if (state.gameMode === 'online') {
+      socket.connect();
+      socket.on('game_state', (serverState) => {
+        dispatch({ type: 'SET_GAME_STATE', payload: serverState });
       });
-      setMessage('接続に失敗しました。後でもう一度お試しください。');
-    };
-
-    // Add event listeners
-    socket.on('connect', handleConnect);
-    socket.on('connect_error', handleConnectError);
-
-    // Clean up event listeners on component unmount
+    }
+    else {
+      socket.disconnect();
+    }
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('connect_error', handleConnectError);
-    };
-  }, []);
-  
-  // Start game functions
-  const startOnlineGame = () => {
-    console.log('Starting online game...');
-    setGameMode('online');
-    setMessage('サーバーに接続中...');
-    
-    // Set up socket connection
-    socket.connect();
-    
-    // Set a timeout to handle connection issues
-    const connectionTimeout = setTimeout(() => {
-      if (!socket.connected) {
-        setMessage('サーバーに接続できませんでした。後でもう一度お試しください。');
-        setGameMode(null);
-      }
-    }, 10000); // 10 second timeout
-
-    // Clear timeout on successful connection
-    socket.once('connect', () => {
-      clearTimeout(connectionTimeout);
-      setSocketConnected(true);
-      setGameStarted(true);
-    });
-  };
-
-  const startSoloGame = () => {
-    console.log('Starting solo game...');
-    setGameMode('solo');
-    setMessage('ソロモードを準備中...');
-    // Add solo game initialization here
-    setTimeout(() => {
-      setGameStarted(true);
-      setMessage('ソロモードでゲームを開始します');
-    }, 1000);
-  };
-  const [playerHand, setPlayerHand] = useState([]); // Handles your hand of cards // Handles your hand of cards
-  const [opponentHand, setOpponentHand] = useState([]);
-  const [playerGraveyard, setPlayerGraveyard] = useState([]);
-  const [opponentGraveyard, setOpponentGraveyard] = useState([]);
-  const [yourPlayedCards, setYourPlayedCards] = useState([]);
-  const [yourManaZone, setYourManaZone] = useState([]);
-  const [yourMaxMana, setYourMaxMana] = useState(0);
-  const [yourCurrentMana, setYourCurrentMana] = useState(0);
-  const [yourLife, setYourLife] = useState(20);
-  const [playerDeckSize, setPlayerDeckSize] = useState(0);
-
-  const [opponentPlayedCards, setOpponentPlayedCards] = useState([]);
-  const [opponentManaZone, setOpponentManaZone] = useState([]);
-  const [opponentDeckSize, setOpponentDeckSize] = useState(0);
-  const [opponentMaxMana, setOpponentMaxMana] = useState(0);
-  const [opponentCurrentMana, setOpponentCurrentMana] = useState(0);
-  const [opponentLife, setOpponentLife] = useState(20);
-
-  const [isYourTurn, setIsYourTurn] = useState(false);
-  const [selectedCardDetail, setSelectedCardDetail] = useState(null);
-  const [effectMessage, setEffectMessage] = useState(null);
-  const [currentPhase, setCurrentPhase] = useState('main_phase_1');
-  const [attackingCreatures, setAttackingCreatures] = useState([]);
-  const [blockingAssignments, setBlockingAssignments] = useState({});
-
-  // --- New states for UI interaction ---
-  const [selectedAttackers, setSelectedAttackers] = useState(new Map());
-  const [selectedBlocker, setSelectedBlocker] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
-  const [tempSelectedBlocker, setTempSelectedBlocker] = useState(null); // 新しいステート
-
-  const [isTargetingEffect, setIsTargetingEffect] = useState(false);
-  const isTargetingEffectRef = useRef(isTargetingEffect);
-  const [effectSourceCardId, setEffectSourceCardId] = useState(null);
-  const [effectMessageForTarget, setEffectMessageForTarget] = useState(null); // To display message like "Select a target"
-  const [effectTypeForTarget, setEffectTypeForTarget] = useState(null);
-  const [effectAmountForTarget, setEffectAmountForTarget] = useState(null);
-
-  const isYourTurnRef = useRef(isYourTurn);
-  useEffect(() => {
-    isYourTurnRef.current = isYourTurn;
-  }, [isYourTurn]);
-
-  useEffect(() => {
-    socket.on('connect', () => {
-      setMessage('Connected to server!');
-      socket.emit('request_game_state');
-    });
-
-    socket.on('disconnect', () => {
-      setMessage('Disconnected from server.');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setMessage(`Connection error: ${error.message}. Retrying...`);
-    });
-
-    socket.on('game_state', (state) => {
-      console.log('[App.js] Received game state:', state);
-      setPlayerHand(state.yourHand || []);
-      setPlayerDeckSize(state.yourDeckSize);
-      setYourPlayedCards(state.yourPlayedCards || []);
-      setYourManaZone(state.yourManaZone || []);
-      setYourMaxMana(state.yourMaxMana);
-      setYourCurrentMana(state.yourCurrentMana);
-      setYourLife(state.yourLife);
-
-      setOpponentPlayedCards(state.opponentPlayedCards || []);
-      setOpponentManaZone(state.opponentManaZone || []);
-      setOpponentDeckSize(state.opponentDeckSize);
-      setOpponentMaxMana(state.opponentMaxMana);
-      setOpponentCurrentMana(state.opponentCurrentMana);
-      setOpponentLife(state.opponentLife);
-
-      // Update graveyards if they exist in the state
-      if (state.yourGraveyard) {
-        setPlayerGraveyard(state.yourGraveyard);
-      }
-      if (state.opponentGraveyard) {
-        setOpponentGraveyard(state.opponentGraveyard);
-      }
-
-      setIsYourTurn(state.isYourTurn);
-      setCurrentPhase(state.currentPhase);
-      setAttackingCreatures(state.attackingCreatures || []);
-      setBlockingAssignments(state.blockingAssignments || {});
-
-      // Reset selections on phase change
-      if (state.currentPhase !== currentPhase) {
-        setSelectedAttackers(new Map());
-        setSelectedBlocker(null);
-        setSelectedTarget(null);
-      }
-    });
-
-    socket.on('effect_triggered', (message) => {
-      setEffectMessage(message);
-      setTimeout(() => setEffectMessage(null), 3000);
-    });
-
-    // New listener for effect targeting
-    socket.on('request_target_for_effect', ({ type, amount, sourceCardId, message }) => {
-      console.log('[App.js] Received request_target_for_effect:', { type, amount, sourceCardId, message });
-      setIsTargetingEffect(true);
-      isTargetingEffectRef.current = true; // Update ref immediately
-      setEffectSourceCardId(sourceCardId);
-      setEffectMessageForTarget(message);
-      setEffectTypeForTarget(type);
-      setEffectAmountForTarget(amount);
-      console.log('[App.js] isTargetingEffect set to true.', isTargetingEffectRef.current);
-      // Optionally, highlight potential targets here if needed
-    });
-
-    return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
       socket.off('game_state');
-      socket.off('effect_triggered');
-      socket.off('request_target_for_effect'); // Clean up new listener
-    };
-  }, []); // Add empty dependency array and closing bracket
-
-  const handleNextPhase = () => {
-    // 自分のターンかどうかで処理を分岐
-    if (isYourTurnRef.current) {
-      // アタック宣言フェイズでは、攻撃者を宣言してからフェーズを進める
-      if (currentPhase === 'declare_attackers') {
-        const attackerIds = Array.from(selectedAttackers.keys());
-        socket.emit('declare_attackers', attackerIds);
-        socket.emit('next_phase'); // サーバーにフェーズ進行を要求
-      } else if (currentPhase !== 'declare_blockers') {
-        // ブロック宣言フェイズ以外なら、単純にフェーズを進める
-        socket.emit('next_phase');
-      }
-    } else {
-      // 相手のターンで、ブロック宣言フェイズの場合のみ、ブロック情報を送ってからフェーズを進める
-      if (currentPhase === 'declare_blockers') {
-        socket.emit('declare_blockers', blockingAssignments);
-        socket.emit('next_phase');
-      }
+      socket.disconnect();
     }
-  };
+  }, [state.gameMode]);
 
-  const handleCardAction = (card, actionType) => {
-    if (actionType === 'hover') {
-      setSelectedCardDetail(card);
-    } else if (actionType === 'leave') {
-      setSelectedCardDetail(null);
-    } else if (actionType === 'toGraveyard') {
-      // Handle moving a card to the graveyard
-      if (yourPlayedCards.some(c => c.id === card.id)) {
-        // Move from your field to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setYourPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (opponentPlayedCards.some(c => c.id === card.id)) {
-        // Move from opponent's field to their graveyard
-        setOpponentGraveyard(prev => [...prev, card]);
-        setOpponentPlayedCards(prev => prev.filter(c => c.id !== card.id));
-      } else if (playerHand.some(c => c.id === card.id)) {
-        // Move from your hand to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setPlayerHand(prev => prev.filter(c => c.id !== card.id));
-      } else if (yourManaZone.some(c => c.id === card.id)) {
-        // Move from your mana zone to your graveyard
-        setPlayerGraveyard(prev => [...prev, card]);
-        setYourManaZone(prev => prev.filter(c => c.id !== card.id));
-      }
-    } else if (actionType === 'click') {
-      // --- Effect Targeting Logic ---
-      if (isTargetingEffectRef.current) {
-        console.log('[App.js] Targeting effect active. Card clicked:', card);
-        // Only allow targeting opponent's played creatures
-        const targetCreature = opponentPlayedCards.find(c => c.id === card.id);
-        if (targetCreature) {
-          console.log('[App.js] Valid target selected:', targetCreature);
-          console.log('[App.js] Emitting resolve_effect_target with:', {
-            sourceCardId: effectSourceCardId,
-            targetCardId: card.id,
-            effectType: effectTypeForTarget,
-            amount: effectAmountForTarget,
-          });
-          socket.emit('resolve_effect_target', {
-            sourceCardId: effectSourceCardId,
-            targetCardId: card.id,
-            effectType: effectTypeForTarget,
-            amount: effectAmountForTarget,
-          });
-          setIsTargetingEffect(false);
-          isTargetingEffectRef.current = false; // Update ref immediately
-          setEffectSourceCardId(null);
-          setEffectMessageForTarget(null);
-        } else {
-          console.log('Invalid target for effect: Not an opponent creature.', card);
-        }
-        return; // Prevent other click actions while targeting
-      }
+  // --- Event Handlers ---
+  const handleStartSoloGame = () => dispatch({ type: 'START_SOLO_GAME' });
+  const handleStartOnlineGame = () => dispatch({ type: 'SET_GAME_STATE', payload: { gameMode: 'online', message: 'サーバーに接続中...' } });
 
-      // --- Attack Phase Logic ---
-      if (isYourTurn && currentPhase === 'declare_attackers') {
-        const myCard = yourPlayedCards.find(c => c.id === card.id);
-        console.log('Card clicked to attack: ', myCard);
-        if (myCard && !myCard.isTapped && myCard.canAttack) {
-          const newSelectedAttackers = new Map(selectedAttackers);
-          if (newSelectedAttackers.has(card.id)) {
-            newSelectedAttackers.delete(card.id);
-          } else {
-            newSelectedAttackers.set(card.id, card);
-          }
-          setSelectedAttackers(newSelectedAttackers);
-        }
-      }
+  // --- Drop Handlers ---
+  const [, dropMana] = useDrop(() => ({
+    accept: 'card',
+    drop: (item) => handleDispatch({ type: 'PLAY_CARD', payload: { cardId: item.id, target: 'mana' } }),
+  }), [state.gameMode]); // Dependency array is crucial
 
-      // --- Block Phase Logic ---
-      if (!isYourTurn && currentPhase === 'declare_blockers') {
-        const opponentAttacker = opponentPlayedCards.find(c => c.id === card.id && attackingCreatures.some(a => a.attackerId === c.id));
-        const myBlocker = yourPlayedCards.find(c => c.id === card.id && !c.isTapped);
+  const [, dropField] = useDrop(() => ({
+    accept: 'card',
+    drop: (item) => handleDispatch({ type: 'PLAY_CARD', payload: { cardId: item.id, target: 'field' } }),
+  }), [state.gameMode]);
 
-        if (opponentAttacker) {
-          setSelectedTarget(card.id);
-          setTempSelectedBlocker(null); // 攻撃対象を選択したら仮ブロッカー選択をリセット
-        } else if (myBlocker) {
-          // 既に攻撃対象が選択されている場合のみ、ブロッカーを仮選択
-          if (selectedTarget) {
-            setTempSelectedBlocker(card.id);
-          }
-        }
-
-        // 攻撃対象と仮選択されたブロッカーの両方が存在する場合にブロックを確定
-        if (selectedTarget && tempSelectedBlocker) {
-          const newAssignments = { ...blockingAssignments };
-          if (!newAssignments[selectedTarget]) {
-            newAssignments[selectedTarget] = [];
-          }
-          if (!newAssignments[selectedTarget].includes(tempSelectedBlocker)) {
-            newAssignments[selectedTarget].push(tempSelectedBlocker);
-          }
-          setBlockingAssignments(newAssignments);
-          socket.emit('declare_blockers', newAssignments); // Send updates immediately
-          setSelectedTarget(null);
-          setTempSelectedBlocker(null); // ブロック割り当て後、仮選択をリセット
-        }
-      }
-    }
-  };
-
-  const [{ isOverYourMana }, dropYourMana] = useDrop(() => ({
-    accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'mana'),
-    collect: (monitor) => ({ isOverYourMana: !!monitor.isOver() }),
-  }));
-
-  const [{ isOverYourField }, dropYourField] = useDrop(() => ({
-    accept: ItemTypes.CARD,
-    drop: (item) => socket.emit('play_card', item.id, 'field'),
-    collect: (monitor) => ({ isOverYourField: !!monitor.isOver() }),
-  }));
-
-  // Render menu if game hasn't started
-  if (!gameStarted) {
-    return (
-      <Menu 
-        onStartOnlineGame={startOnlineGame} 
-        onStartSoloGame={startSoloGame} 
-      />
-    );
+  // --- Render Logic ---
+  if (!state.gameStarted) {
+    return <Menu onStartOnlineGame={handleStartOnlineGame} onStartSoloGame={handleStartSoloGame} />;
   }
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={styles.appContainer}>
-        {gameMode === 'online' && (
-          <div className={styles.connectionStatus}>
-            {socket.connected ? 'オンライン接続中' : '接続中...'}
-          </div>
-        )}
-        <h1 className={styles.messageHeader}>{message}</h1>
-        <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
-        <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
+        <h1 className={styles.messageHeader}>{state.message}</h1>
+        <h2 className={styles.turnHeader}>{state.isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
+        <h3 className={styles.phaseHeader}>{state.currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
 
         <div className={styles.gameArea}>
           {/* Opponent's Area */}
           <div className={styles.opponentArea}>
-            <h3>Opponent's Area</h3>
-            <p>Opponent's Life: {opponentLife}</p>
-            <p>Opponent's Deck Size: {opponentDeckSize}</p>
-            <p>Opponent's Mana: {opponentCurrentMana} / {opponentMaxMana}</p>
-            <div className={styles.opponentFieldManaContainer}>
-              <h4>Opponent's Played Cards:</h4>
-              <div className={styles.playedCardsArea}>
-                {opponentPlayedCards.map(card => (
-                  <Card
-                    key={card.id} {...card}
-                    onCardAction={handleCardAction}
-                    isPlayed={true}
-                    isTapped={card.isTapped || false}
-                    isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
-                    isSelectedAttacker={false}
-                    isSelectedBlocker={false}
-                    isSelectedTarget={selectedTarget === card.id}
-                    isTargetableForEffect={isTargetingEffect && opponentPlayedCards.some(c => c.id === card.id)}
-                  />
-                ))}
-              </div>
-              <div className={styles.opponentManaZoneContainer}>
-                <h4>Opponent's Mana Zone:</h4>
-                <div className={styles.manaZone}>
-                  {opponentManaZone.length > 0 ? (
-                    opponentManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
-                  ) : (
-                    <p className={styles.emptyZoneText}>Empty</p>
-                  )}
-                </div>
-                <div className={styles.graveyardContainer}>
-                  <Graveyard
-                    cards={opponentGraveyard}
-                    onCardAction={handleCardAction}
-                    isOpponent={true}
-                  />
-                </div>
-              </div>
+            <h3>Opponent</h3>
+            <p>Life: {state.opponent.life} | Mana: {state.opponent.currentMana}/{state.opponent.maxMana}</p>
+            <div className={styles.playedCardsArea}>
+              {state.opponent.playedCards.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
             </div>
           </div>
 
-          {/* Your Area */}
+          {/* Player's Area */}
           <div className={styles.yourArea}>
-            <h3>Your Area</h3>
-            <p>Your Life: {yourLife}</p>
-            <h4>Your Played Cards:</h4>
-            <div ref={dropYourField} className={`${styles.playedCardsArea} ${isOverYourField ? styles.playedCardsAreaOver : ''}`}>
-              {yourPlayedCards.map(card => (
-                <Card
-                  key={card.id} {...card}
-                  onCardAction={handleCardAction}
-                  isPlayed={true}
-                  isTapped={card.isTapped || false}
-                  isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
-                  isSelectedAttacker={selectedAttackers.has(card.id)}
-                  isSelectedBlocker={blockingAssignments[selectedTarget] && blockingAssignments[selectedTarget].includes(card.id)} // 確定したブロッカー
-                  isTempSelectedBlocker={tempSelectedBlocker === card.id} // 仮選択中のブロッカー
-                  isSelectedTarget={selectedTarget === card.id}
-                />
-              ))}
-            </div>
-
-            <div className={styles.manaHandContainer}>
-              <div className={styles.manaZoneContainer}>
-                <p>Your Mana: {yourCurrentMana} / {yourMaxMana}</p>
-                <h4>Your Mana Zone:</h4>
-                <div ref={dropYourMana} className={`${styles.manaZone} ${isOverYourMana ? styles.manaZoneOver : ''}`}>
-                  {yourManaZone.length > 0 ? (
-                    yourManaZone.map(card => <Card key={card.id} {...card} onCardAction={handleCardAction} isPlayed={false} isTapped={false} isAttacking={false} isSelectedAttacker={false} isSelectedBlocker={false} isSelectedTarget={false} />)
-                  ) : (
-                    <p className={styles.emptyZoneText}>Empty</p>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.graveyardContainer}>
-                <Graveyard
-                  cards={playerGraveyard}
-                  onCardAction={handleCardAction}
-                  isOpponent={false}
-                />
-              </div>
-
-              <div className={styles.handContainer}>
-                <h3>Your Hand:</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                  {playerHand.map(card =>
-                    <Card
-                      key={card.id}
-                      {...card}
-                      onCardAction={handleCardAction}
-                      isPlayed={false}
-                      isTapped={false}
-                      isAttacking={false}
-                      isSelectedAttacker={false}
-                      isSelectedBlocker={false}
-                      isSelectedTarget={false}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.deckEndTurnContainer}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <Deck />
-              </div>
-              <p>Your Deck Size: {playerDeckSize}</p>
-              <button
-                onClick={handleNextPhase}
-                className={styles.endTurnButton}
-                disabled={!isYourTurn && currentPhase !== 'declare_blockers' || isYourTurn && currentPhase === 'declare_blockers'}>
-                {currentPhase === 'declare_attackers' ? 'Declare Attack' :
-                 (currentPhase === 'declare_blockers' && !isYourTurn) ? 'Confirm Blocks' : 'Next Phase'}
-              </button>
+            <h3>You</h3>
+            <p>Life: {state.player.life} | Mana: {state.player.currentMana}/{state.player.maxMana}</p>
+            <div ref={dropField} className={styles.playedCardsArea}>
+              {state.player.playedCards.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
             </div>
           </div>
         </div>
+
+        <div className={styles.bottomArea}>
+            <div ref={dropMana} className={styles.manaZoneContainer}>
+                <h4>Mana Zone</h4>
+                <div className={styles.manaZone}>
+                    {state.player.manaZone.map(card => <Card key={card.id} {...card} isPlayed={true} />)}
+                </div>
+            </div>
+            <div className={styles.handContainer}>
+                <h3>Your Hand</h3>
+                <div className={styles.hand}>
+                    {state.player.hand.map(card => <Card key={card.id} {...card} />)}
+                </div>
+            </div>
+            <div className={styles.controls}>
+                <Deck deckSize={state.player.deckSize} />
+                <Graveyard cards={state.player.graveyard} />
+                <button className={styles.endTurnButton}>End Turn</button>
+            </div>
+        </div>
+
+        {state.selectedCardDetail && <CardDetail card={state.selectedCardDetail} />}
       </div>
-      {selectedCardDetail && (
-        <div style={{
-          position: 'fixed',
-          top: '20px', // 画面上部から20px
-          left: '20px', // 画面左部から20px
-          zIndex: 1000, // 他の要素より手前に表示
-          // その他のスタイルはCardDetailコンポーネント内で定義されているはず
-        }}>
-          <CardDetail card={selectedCardDetail} onClose={() => setSelectedCardDetail(null)} />
-        </div>
-      )}
-      {effectMessage && (
-        <div style={{ position: 'fixed', top: '20px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'white', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
-          {effectMessage}
-        </div>
-      )}
-      {isTargetingEffect && effectMessageForTarget && (
-        <div style={{ position: 'fixed', top: '80px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'yellow', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
-          {effectMessageForTarget}
-        </div>
-      )}
     </DndProvider>
   );
 };
