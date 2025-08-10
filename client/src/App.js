@@ -583,6 +583,12 @@ const App = () => {
       return;
     }
 
+    // If a card on the field is clicked, treat it as an 'attack' action during the appropriate phase.
+    if (actionType === 'click' && isYourTurn && yourPlayedCards.some(c => c.id === card.id)) {
+      actionType = 'attack';
+      console.log('[handleCardAction] Click on friendly card on field, re-routing to "attack" action.');
+    }
+
     // Centralized logic for solo vs online
     if (gameMode === 'online') {
       console.log('[handleCardAction] Handling as ONLINE action.');
@@ -606,7 +612,7 @@ const App = () => {
       return;
     }
 
-    console.log('[handleCardAction] Handling as SOLO action.');
+    console.log(`[handleCardAction] Handling as SOLO action. Action type: ${actionType}`);
     switch (actionType) {
       case 'playToMana': {
         const cardInHand = playerHand.find(c => c.id === card.id);
@@ -646,7 +652,7 @@ const App = () => {
         break;
       }
       case 'attack': {
-        if (currentPhase === 'declare_attackers' || currentPhase === 'combat') {
+        if (currentPhase === 'declare_attackers') {
           const myCard = yourPlayedCards.find(c => c.id === card.id);
           if (myCard && !myCard.isTapped && myCard.canAttack) {
             const newSelectedAttackers = new Map(selectedAttackers);
@@ -657,6 +663,8 @@ const App = () => {
             }
             setSelectedAttackers(newSelectedAttackers);
           }
+        } else {
+          console.log(`Cannot attack in phase: ${currentPhase}`);
         }
         break;
       }

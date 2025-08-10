@@ -69,6 +69,7 @@ const Card = ({
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       <div style={{ fontSize: '0.8em', alignSelf: 'flex-start' }}>Cost: {manaCost}</div>
       <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{name}</div>
