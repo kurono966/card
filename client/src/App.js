@@ -279,7 +279,7 @@ const App = () => {
       const timer = setTimeout(phaseAction, 1000); // 1-second delay between phases
       return () => clearTimeout(timer);
     }
-  }, [aiPhase, isYourTurn, gameMode, opponentDeckSize, opponentHand, opponentCurrentMana, opponentPlayedCards]);
+  }, [aiPhase, isYourTurn, gameMode]);
 
 
   const endTurn = () => {
@@ -532,21 +532,17 @@ const App = () => {
           setTimeout(() => endTurn(), 1500);
         }
       }
-    } else {
-      if (isYourTurnRef.current) {
-        if (currentPhase === 'declare_attackers') {
-          const attackerIds = Array.from(selectedAttackers.keys());
-          socket.emit('declare_attackers', attackerIds);
-          socket.emit('next_phase');
-        } else if (currentPhase !== 'declare_blockers') {
-          socket.emit('next_phase');
-        }
-      }
-    } else {
-      if (currentPhase === 'declare_blockers') {
-        socket.emit('declare_blockers', blockingAssignments);
+    } else if (isYourTurnRef.current) {
+      if (currentPhase === 'declare_attackers') {
+        const attackerIds = Array.from(selectedAttackers.keys());
+        socket.emit('declare_attackers', attackerIds);
+        socket.emit('next_phase');
+      } else if (currentPhase !== 'declare_blockers') {
         socket.emit('next_phase');
       }
+    } else if (currentPhase === 'declare_blockers') {
+      socket.emit('declare_blockers', blockingAssignments);
+      socket.emit('next_phase');
     }
   };
 
