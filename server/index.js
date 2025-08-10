@@ -8,32 +8,36 @@ console.log('Starting server...');
 const app = express();
 const cors = require('cors');
 
-// CORS設定
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://neocard-client.vercel.app'],
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
+// --- CORS Configuration ---
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://neocard-client.vercel.app",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is in the allowed list or matches the Vercel preview URL pattern
+    if (allowedOrigins.includes(origin) || /https:\/\/neocard-client-.*\.vercel\.app/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  credentials: true,
+};
+
+// Use the same CORS options for both Express and Socket.IO
+app.use(cors(corsOptions));
 
 const server = http.createServer(app);
 
 const io = socketIo(server, {
-  cors: {
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://neocard-client.vercel.app",
-      ];
-      if (!origin || allowedOrigins.includes(origin) || /https:\/\/neocard-client-.*\.vercel\.app/.test(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-  },
+  cors: corsOptions, // Reuse the same options
   pingTimeout: 30000,
   pingInterval: 25000,
 });
@@ -351,7 +355,7 @@ function endCurrentTurnAndStartNext(gameId) {
     nextPlayer.played.forEach(card => {
         card.isTapped = false;
         card.canAttack = true;
-        card.defense = allCards.find(c => c.id === card.id.split('_')[0]).defense;
+        card.defense = allCards.find(c => c.id === c.id.split('_')[0]).defense;
     });
 
     if (nextPlayer.deck.length > 0) {
