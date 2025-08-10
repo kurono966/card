@@ -106,22 +106,21 @@ const App = () => {
     setGameMode('online');
     setMessage('サーバーに接続中...');
     
-    // Set up socket connection
     socket.connect();
     
-    // Set a timeout to handle connection issues
     const connectionTimeout = setTimeout(() => {
       if (!socket.connected) {
         setMessage('サーバーに接続できませんでした。後でもう一度お試しください。');
         setGameMode(null);
       }
-    }, 10000); // 10 second timeout
+    }, 10000);
 
-    // Clear timeout on successful connection
     socket.once('connect', () => {
       clearTimeout(connectionTimeout);
       setSocketConnected(true);
+      socket.emit('start_online_game'); // ★ オンライン対戦をリクエスト
       setGameStarted(true);
+      // メッセージはサーバーからの応答で設定されるのを待つ
     });
   };
 

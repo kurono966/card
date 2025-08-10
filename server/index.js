@@ -45,7 +45,7 @@ const GAME_PHASES = {
   MAIN_PHASE_1: 'main_phase_1',
   DECLARE_ATTACKERS: 'declare_attackers',
   DECLARE_BLOCKERS: 'declare_blockers',
-  COMBAT_DAMAGE: 'combat_damage',
+  COMBAT_DAMAGE: 'combat_damage', // This phase is conceptual, resolved in DECLARE_BLOCKERS
   MAIN_PHASE_2: 'main_phase_2',
   END_PHASE: 'end_phase',
 };
@@ -74,7 +74,9 @@ function initializePlayerState(socketId, gameId) {
   const deckSize = 40;
   for (let i = 0; i < deckSize; i++) {
     const randomIndex = Math.floor(Math.random() * allCards.length);
-    const card = { ...allCards[randomIndex], id: `${allCards[randomIndex].id}_${socketId}_${i}`, isTapped: false };
+    // Create a deep copy of the card and give it a unique ID
+    const cardTemplate = allCards[randomIndex];
+    const card = { ...cardTemplate, id: `${cardTemplate.id}_${socketId}_${i}`, isTapped: false, canAttack: false };
     deck.push(card);
   }
   deck = shuffleArray(deck);
@@ -105,6 +107,8 @@ function startGame(player1Id, player2Id) {
 
   // First player's turn
   player1State.isTurn = true;
+  player1State.maxMana = 1;
+  player1State.currentMana = 1;
 
   const game = {
     id: gameId,
@@ -122,16 +126,14 @@ function startGame(player1Id, player2Id) {
 
   games[gameId] = game;
 
-  // Assign gameId to sockets
   const player1Socket = io.sockets.sockets.get(player1Id);
   if (player1Socket) {
     player1Socket.gameId = gameId;
   }
-  
   if (player2Id !== AI_PLAYER_ID) {
     const player2Socket = io.sockets.sockets.get(player2Id);
     if (player2Socket) {
-        player2Socket.gameId = gameId;
+      player2Socket.gameId = gameId;
     }
   }
 
@@ -146,18 +148,17 @@ function emitFullGameState(gameId) {
     console.error(`[Server] emitFullGameState: Game not found for ID ${gameId}`);
     return;
   }
-  console.log(`--- [Game ${gameId}] Emitting Full Game State ---`);
 
   game.playerOrder.forEach(pId => {
-    if (pId === AI_PLAYER_ID) return; // Don't emit to AI
+    if (pId === AI_PLAYER_ID) return;
 
     const selfPlayer = game.players[pId];
     const opponentId = game.playerOrder.find(id => id !== pId);
     const opponentPlayer = game.players[opponentId];
 
     if (!selfPlayer || !opponentPlayer) {
-        console.error(`[Server] Player or opponent not found in game ${gameId}`);
-        return;
+      console.error(`[Server] Player or opponent not found in game ${gameId}`);
+      return;
     }
 
     let stateForSelf = {
@@ -182,9 +183,96 @@ function emitFullGameState(gameId) {
       blockingAssignments: game.blockingAssignments,
     };
     io.to(pId).emit('game_state', stateForSelf);
-    console.log(`[Game ${gameId}] State sent to ${pId}. Turn: ${selfPlayer.isTurn}, Phase: ${game.currentPhase}`);
   });
-  console.log(`-------------------------------------------`);
+}
+
+// --- Combat Logic ---
+function resolveCombat(gameId) {
+    const game = games[gameId];
+    if (!game) return;
+
+    const attackerPlayerId = game.playerOrder[game.currentPlayerIndex];
+    const attackerPlayer = game.players[attackerPlayerId];
+    const defenderPlayerId = game.playerOrder.find(id => id !== attackerPlayerId);
+    const defenderPlayer = game.players[defenderPlayerId];
+
+    console.log(`[Game ${gameId}] Resolving combat...`);
+
+    // Create copies of creatures to store original stats
+    const creatureCopies = {};
+    [...attackerPlayer.played, ...defenderPlayer.played].forEach(c => {
+        creatureCopies[c.id] = { ...c };
+    });
+
+    // 1. Damage Calculation
+    game.attackingCreatures.forEach(attackInfo => {
+        const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
+        if (!attackerCard) return;
+
+        const blockers = game.blockingAssignments[attackInfo.attackerId] || [];
+
+        if (blockers.length > 0) {
+            // --- Blocked --- 
+            let totalBlockerAttack = 0;
+            blockers.forEach(blockerId => {
+                const blockerCard = defenderPlayer.played.find(c => c.id === blockerId);
+                if (blockerCard) {
+                    totalBlockerAttack += creatureCopies[blockerId].attack;
+                }
+            });
+
+            attackerCard.defense -= totalBlockerAttack;
+
+            // Attacker deals damage to blockers (simple: first blocker takes all)
+            const firstBlocker = defenderPlayer.played.find(c => c.id === blockers[0]);
+            if (firstBlocker) {
+                firstBlocker.defense -= creatureCopies[attackerCard.id].attack;
+            }
+            console.log(`[Game ${gameId}] ${creatureCopies[attackerCard.id].name} was blocked.`);
+
+        } else {
+            // --- Unblocked --- 
+            defenderPlayer.life -= creatureCopies[attackerCard.id].attack;
+            console.log(`[Game ${gameId}] ${creatureCopies[attackerCard.id].name} dealt ${creatureCopies[attackerCard.id].attack} damage to player ${defenderPlayerId}. Life: ${defenderPlayer.life}`);
+        }
+    });
+
+    // 2. Cleanup Destroyed Creatures
+    const attackerGraveyard = [];
+    attackerPlayer.played = attackerPlayer.played.filter(c => {
+        if (c.defense <= 0) {
+            attackerGraveyard.push(creatureCopies[c.id]);
+            console.log(`[Game ${gameId}] Attacker ${creatureCopies[c.id].name} was destroyed.`);
+            return false;
+        }
+        return true;
+    });
+    attackerPlayer.graveyard.push(...attackerGraveyard);
+
+    const defenderGraveyard = [];
+    defenderPlayer.played = defenderPlayer.played.filter(c => {
+        if (c.defense <= 0) {
+            defenderGraveyard.push(creatureCopies[c.id]);
+            console.log(`[Game ${gameId}] Defender ${creatureCopies[c.id].name} was destroyed.`);
+            return false;
+        }
+        return true;
+    });
+    defenderPlayer.graveyard.push(...defenderGraveyard);
+
+    // 3. Check for Game Over
+    if (defenderPlayer.life <= 0) {
+        console.log(`[Game ${gameId}] Player ${defenderPlayerId} defeated.`);
+        io.to(attackerPlayerId).emit('game_over', { result: 'You Win!' });
+        if (defenderPlayerId !== AI_PLAYER_ID) {
+            io.to(defenderPlayerId).emit('game_over', { result: 'You Lose!' });
+        }
+        game.gameActive = false;
+    }
+
+    // 4. Clear combat state
+    game.attackingCreatures = [];
+    game.blockingAssignments = {};
 }
 
 // --- AI Logic ---
@@ -194,37 +282,32 @@ async function aiTurnLogic(gameId) {
     console.log(`[AI] [Game ${gameId}] Starting AI turn.`);
 
     const ai = game.players[AI_PLAYER_ID];
-    const humanPlayerId = game.playerOrder.find(id => id !== AI_PLAYER_ID);
-    const humanPlayer = game.players[humanPlayerId];
-
-    // Helper to add delay
     const delay = ms => new Promise(res => setTimeout(res, ms));
 
-    await delay(1000); // Thinking time
+    await delay(1000);
 
     // 1. Play Mana
     if (!ai.manaPlayedThisTurn && ai.hand.length > 0) {
-        const cardToPlayAsMana = ai.hand[0]; // Simple: play the first card
+        const cardToPlayAsMana = ai.hand[0];
         ai.hand.shift();
         ai.manaZone.push(cardToPlayAsMana);
-        ai.maxMana++;
         ai.currentMana++;
         ai.manaPlayedThisTurn = true;
-        console.log(`[AI] [Game ${gameId}] Played ${cardToPlayAsMana.name} as mana.`);
+        console.log(`[AI] [Game ${gameId}] Played a card as mana.`);
         emitFullGameState(gameId);
         await delay(1000);
     }
 
     // 2. Play Creatures
-    let playedCreature = false;
+    let playedCreature;
     do {
         playedCreature = false;
         const playableCreatures = ai.hand.filter(c => c.type === 'Creature' && c.manaCost <= ai.currentMana);
         if (playableCreatures.length > 0) {
-            const creatureToPlay = playableCreatures[0]; // Simple: play the cheapest
+            const creatureToPlay = playableCreatures[0];
             ai.hand = ai.hand.filter(c => c.id !== creatureToPlay.id);
             ai.currentMana -= creatureToPlay.manaCost;
-            creatureToPlay.canAttack = false; // Summoning sickness
+            creatureToPlay.canAttack = false;
             ai.played.push(creatureToPlay);
             playedCreature = true;
             console.log(`[AI] [Game ${gameId}] Played creature ${creatureToPlay.name}.`);
@@ -232,7 +315,6 @@ async function aiTurnLogic(gameId) {
             await delay(1000);
         }
     } while (playedCreature);
-
 
     // 3. Declare Attackers
     game.currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
@@ -247,26 +329,22 @@ async function aiTurnLogic(gameId) {
             game.attackingCreatures.push({ attackerId: attacker.id, targetId: 'player' });
         });
         console.log(`[AI] [Game ${gameId}] Declared ${attackers.length} attackers.`);
+        game.currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
     } else {
         console.log(`[AI] [Game ${gameId}] No creatures to attack with.`);
+        game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
     }
-    
-    // Since human is blocking, we move to their phase
-    game.currentPhase = game.attackingCreatures.length > 0 ? GAME_PHASES.DECLARE_BLOCKERS : GAME_PHASES.MAIN_PHASE_2;
     emitFullGameState(gameId);
-    
-    // If no attackers, AI proceeds to end turn
+
+    // If no attackers, AI proceeds to end turn. Otherwise, wait for human to block.
     if (game.attackingCreatures.length === 0) {
         await delay(1000);
         game.currentPhase = GAME_PHASES.END_PHASE;
-        console.log(`[AI] [Game ${gameId}] Moving to end phase.`);
         emitFullGameState(gameId);
         await delay(500);
         endCurrentTurnAndStartNext(gameId);
     }
-    // ... otherwise, we wait for the human to block. The human's 'next_phase' action will trigger combat resolution.
 }
-
 
 // --- Turn Management ---
 function endCurrentTurnAndStartNext(gameId) {
@@ -277,6 +355,8 @@ function endCurrentTurnAndStartNext(gameId) {
   const currentPlayer = game.players[currentPlayerId];
   if (currentPlayer) {
     currentPlayer.isTurn = false;
+    // Reset creature defense at end of turn
+    currentPlayer.played.forEach(c => { c.defense = allCards.find(card => card.id === c.id.split('_')[0]).defense; });
   }
 
   game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playerOrder.length;
@@ -285,23 +365,20 @@ function endCurrentTurnAndStartNext(gameId) {
 
   if (nextPlayer) {
     nextPlayer.isTurn = true;
-    nextPlayer.maxMana++; // Gain 1 max mana at the start of the turn
+    nextPlayer.maxMana++;
     nextPlayer.currentMana = nextPlayer.maxMana;
     nextPlayer.manaPlayedThisTurn = false;
     
-    // Untap creatures
     nextPlayer.played.forEach(card => {
         card.isTapped = false;
         card.canAttack = true;
+        // Reset defense at start of turn
+        card.defense = allCards.find(c => c.id === card.id.split('_')[0]).defense;
     });
 
-    // Draw a card
     if (nextPlayer.deck.length > 0) {
-      const card = nextPlayer.deck.shift();
-      nextPlayer.hand.push(card);
-    } else {
-      // Handle deck out
-    }
+      nextPlayer.hand.push(nextPlayer.deck.shift());
+    } 
     
     game.currentPhase = GAME_PHASES.MAIN_PHASE_1;
     game.attackingCreatures = [];
@@ -310,7 +387,6 @@ function endCurrentTurnAndStartNext(gameId) {
     console.log(`[Game ${gameId}] Turn ended for ${currentPlayerId}. Next turn for ${nextPlayerId}`);
     emitFullGameState(gameId);
 
-    // If the next player is the AI, trigger its logic
     if (nextPlayerId === AI_PLAYER_ID) {
       aiTurnLogic(gameId);
     }
@@ -319,30 +395,24 @@ function endCurrentTurnAndStartNext(gameId) {
   }
 }
 
-
 // --- Socket.IO Event Handlers ---
 io.on('connection', (socket) => {
   console.log(`[Server] Client connected: ${socket.id}`);
 
   socket.on('start_online_game', () => {
     console.log(`[Server] ${socket.id} wants to start an online game.`);
-    if (waitingPlayer) {
-      if(waitingPlayer.id !== socket.id) {
+    if (waitingPlayer && waitingPlayer.id !== socket.id) {
         const player2 = socket;
         const player1 = waitingPlayer;
         waitingPlayer = null;
         startGame(player1.id, player2.id);
-      }
     } else {
       waitingPlayer = socket;
       socket.emit('message', 'Waiting for another player...');
-      console.log(`[Server] ${socket.id} is waiting for a match.`);
     }
   });
 
   socket.on('start_solo_game', () => {
-    console.log(`[Server] ${socket.id} wants to start a solo game.`);
-    // If this player is waiting for an online game, remove them from queue
     if (waitingPlayer && waitingPlayer.id === socket.id) {
         waitingPlayer = null;
     }
@@ -352,7 +422,7 @@ io.on('connection', (socket) => {
   socket.on('play_card', (cardId, playType) => {
     const gameId = socket.gameId;
     const game = games[gameId];
-    if (!game) return;
+    if (!game || !game.gameActive) return;
     const player = game.players[socket.id];
     if (!player || !player.isTurn) return;
 
@@ -362,7 +432,7 @@ io.on('connection', (socket) => {
 
     if (playType === 'mana') {
         if (player.manaPlayedThisTurn) {
-            player.hand.push(card); // Return to hand
+            player.hand.push(card);
         } else {
             player.manaZone.push(card);
             player.currentMana++;
@@ -371,10 +441,10 @@ io.on('connection', (socket) => {
     } else if (playType === 'field') {
         if (player.currentMana >= card.manaCost) {
             player.currentMana -= card.manaCost;
-            card.canAttack = false; // Summoning sickness
+            card.canAttack = false;
             player.played.push(card);
         } else {
-            player.hand.push(card); // Return to hand
+            player.hand.push(card);
         }
     }
     emitFullGameState(gameId);
@@ -383,10 +453,9 @@ io.on('connection', (socket) => {
   socket.on('next_phase', () => {
     const gameId = socket.gameId;
     const game = games[gameId];
-    if (!game) return;
+    if (!game || !game.gameActive) return;
     const player = game.players[socket.id];
     
-    // Allow phase progression only for the current turn player, except for blocking
     if (!player.isTurn && game.currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) return;
 
     switch (game.currentPhase) {
@@ -401,9 +470,7 @@ io.on('connection', (socket) => {
             }
             break;
         case GAME_PHASES.DECLARE_BLOCKERS:
-            // Resolve combat, then move to next phase
-            // For simplicity, we'll just move to the next phase for now.
-            // A full implementation would resolve damage here.
+            resolveCombat(gameId);
             game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
             break;
         case GAME_PHASES.MAIN_PHASE_2:
@@ -411,7 +478,7 @@ io.on('connection', (socket) => {
             break;
         case GAME_PHASES.END_PHASE:
             endCurrentTurnAndStartNext(gameId);
-            return; // endCurrentTurnAndStartNext already emits state
+            return;
     }
     emitFullGameState(gameId);
   });
@@ -419,7 +486,7 @@ io.on('connection', (socket) => {
   socket.on('declare_attackers', (attackerIds) => {
     const gameId = socket.gameId;
     const game = games[gameId];
-    if (!game) return;
+    if (!game || !game.gameActive) return;
     const player = game.players[socket.id];
     if (!player.isTurn || game.currentPhase !== GAME_PHASES.DECLARE_ATTACKERS) return;
 
@@ -433,6 +500,18 @@ io.on('connection', (socket) => {
     });
     emitFullGameState(gameId);
   });
+
+  socket.on('declare_blockers', (assignments) => {
+    const gameId = socket.gameId;
+    const game = games[gameId];
+    if (!game || !game.gameActive) return;
+    const player = game.players[socket.id];
+    if (player.isTurn || game.currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) return;
+
+    game.blockingAssignments = assignments;
+    console.log(`[Game ${gameId}] Player ${socket.id} declared blockers:`, assignments);
+    emitFullGameState(gameId);
+  });
   
   socket.on('disconnect', () => {
     console.log(`[Server] Client disconnected: ${socket.id}`);
@@ -440,13 +519,14 @@ io.on('connection', (socket) => {
       waitingPlayer = null;
       console.log(`[Server] Player ${socket.id} removed from waiting queue.`);
     }
-    // Handle in-game disconnect
     const gameId = socket.gameId;
     if (gameId && games[gameId]) {
         const game = games[gameId];
         const opponentId = game.playerOrder.find(id => id !== socket.id);
-        if (opponentId && io.sockets.sockets.get(opponentId)) {
-            io.to(opponentId).emit('message', 'Opponent disconnected. You win!');
+        if (opponentId) {
+            if (opponentId !== AI_PLAYER_ID && io.sockets.sockets.get(opponentId)) {
+                 io.to(opponentId).emit('message', 'Opponent disconnected. You win!');
+            }
         }
         delete games[gameId];
         console.log(`[Game ${gameId}] Game ended due to disconnect.`);
