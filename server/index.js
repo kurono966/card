@@ -144,13 +144,15 @@ function startGame(player1Id, player2Id) {
 // --- Game State Broadcasting ---
 function emitFullGameState(gameId) {
   const game = games[gameId];
-  if (!game) {
-    console.error(`[Server] emitFullGameState: Game not found for ID ${gameId}`);
+  if (!game || !game.gameActive) {
     return;
   }
 
   game.playerOrder.forEach(pId => {
     if (pId === AI_PLAYER_ID) return;
+
+    const socket = io.sockets.sockets.get(pId);
+    if (!socket) return; // Skip if socket not connected
 
     const selfPlayer = game.players[pId];
     const opponentId = game.playerOrder.find(id => id !== pId);
@@ -198,13 +200,11 @@ function resolveCombat(gameId) {
 
     console.log(`[Game ${gameId}] Resolving combat...`);
 
-    // Create copies of creatures to store original stats
     const creatureCopies = {};
     [...attackerPlayer.played, ...defenderPlayer.played].forEach(c => {
         creatureCopies[c.id] = { ...c };
     });
 
-    // 1. Damage Calculation
     game.attackingCreatures.forEach(attackInfo => {
         const attackerCard = attackerPlayer.played.find(c => c.id === attackInfo.attackerId);
         if (!attackerCard) return;
@@ -212,7 +212,6 @@ function resolveCombat(gameId) {
         const blockers = game.blockingAssignments[attackInfo.attackerId] || [];
 
         if (blockers.length > 0) {
-            // --- Blocked --- 
             let totalBlockerAttack = 0;
             blockers.forEach(blockerId => {
                 const blockerCard = defenderPlayer.played.find(c => c.id === blockerId);
@@ -220,29 +219,22 @@ function resolveCombat(gameId) {
                     totalBlockerAttack += creatureCopies[blockerId].attack;
                 }
             });
-
             attackerCard.defense -= totalBlockerAttack;
 
-            // Attacker deals damage to blockers (simple: first blocker takes all)
             const firstBlocker = defenderPlayer.played.find(c => c.id === blockers[0]);
             if (firstBlocker) {
                 firstBlocker.defense -= creatureCopies[attackerCard.id].attack;
             }
-            console.log(`[Game ${gameId}] ${creatureCopies[attackerCard.id].name} was blocked.`);
-
         } else {
-            // --- Unblocked --- 
             defenderPlayer.life -= creatureCopies[attackerCard.id].attack;
-            console.log(`[Game ${gameId}] ${creatureCopies[attackerCard.id].name} dealt ${creatureCopies[attackerCard.id].attack} damage to player ${defenderPlayerId}. Life: ${defenderPlayer.life}`);
+            console.log(`[Game ${gameId}] Player ${defenderPlayerId} life: ${defenderPlayer.life}`);
         }
     });
 
-    // 2. Cleanup Destroyed Creatures
     const attackerGraveyard = [];
     attackerPlayer.played = attackerPlayer.played.filter(c => {
         if (c.defense <= 0) {
             attackerGraveyard.push(creatureCopies[c.id]);
-            console.log(`[Game ${gameId}] Attacker ${creatureCopies[c.id].name} was destroyed.`);
             return false;
         }
         return true;
@@ -253,16 +245,13 @@ function resolveCombat(gameId) {
     defenderPlayer.played = defenderPlayer.played.filter(c => {
         if (c.defense <= 0) {
             defenderGraveyard.push(creatureCopies[c.id]);
-            console.log(`[Game ${gameId}] Defender ${creatureCopies[c.id].name} was destroyed.`);
             return false;
         }
         return true;
     });
     defenderPlayer.graveyard.push(...defenderGraveyard);
 
-    // 3. Check for Game Over
     if (defenderPlayer.life <= 0) {
-        console.log(`[Game ${gameId}] Player ${defenderPlayerId} defeated.`);
         io.to(attackerPlayerId).emit('game_over', { result: 'You Win!' });
         if (defenderPlayerId !== AI_PLAYER_ID) {
             io.to(defenderPlayerId).emit('game_over', { result: 'You Lose!' });
@@ -270,7 +259,6 @@ function resolveCombat(gameId) {
         game.gameActive = false;
     }
 
-    // 4. Clear combat state
     game.attackingCreatures = [];
     game.blockingAssignments = {};
 }
@@ -286,19 +274,16 @@ async function aiTurnLogic(gameId) {
 
     await delay(1000);
 
-    // 1. Play Mana
     if (!ai.manaPlayedThisTurn && ai.hand.length > 0) {
         const cardToPlayAsMana = ai.hand[0];
         ai.hand.shift();
         ai.manaZone.push(cardToPlayAsMana);
         ai.currentMana++;
         ai.manaPlayedThisTurn = true;
-        console.log(`[AI] [Game ${gameId}] Played a card as mana.`);
         emitFullGameState(gameId);
         await delay(1000);
     }
 
-    // 2. Play Creatures
     let playedCreature;
     do {
         playedCreature = false;
@@ -310,13 +295,11 @@ async function aiTurnLogic(gameId) {
             creatureToPlay.canAttack = false;
             ai.played.push(creatureToPlay);
             playedCreature = true;
-            console.log(`[AI] [Game ${gameId}] Played creature ${creatureToPlay.name}.`);
             emitFullGameState(gameId);
             await delay(1000);
         }
     } while (playedCreature);
 
-    // 3. Declare Attackers
     game.currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
     emitFullGameState(gameId);
     await delay(1000);
@@ -328,15 +311,12 @@ async function aiTurnLogic(gameId) {
             attacker.isTapped = true;
             game.attackingCreatures.push({ attackerId: attacker.id, targetId: 'player' });
         });
-        console.log(`[AI] [Game ${gameId}] Declared ${attackers.length} attackers.`);
         game.currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
     } else {
-        console.log(`[AI] [Game ${gameId}] No creatures to attack with.`);
         game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
     }
     emitFullGameState(gameId);
 
-    // If no attackers, AI proceeds to end turn. Otherwise, wait for human to block.
     if (game.attackingCreatures.length === 0) {
         await delay(1000);
         game.currentPhase = GAME_PHASES.END_PHASE;
@@ -355,7 +335,6 @@ function endCurrentTurnAndStartNext(gameId) {
   const currentPlayer = game.players[currentPlayerId];
   if (currentPlayer) {
     currentPlayer.isTurn = false;
-    // Reset creature defense at end of turn
     currentPlayer.played.forEach(c => { c.defense = allCards.find(card => card.id === c.id.split('_')[0]).defense; });
   }
 
@@ -372,7 +351,6 @@ function endCurrentTurnAndStartNext(gameId) {
     nextPlayer.played.forEach(card => {
         card.isTapped = false;
         card.canAttack = true;
-        // Reset defense at start of turn
         card.defense = allCards.find(c => c.id === card.id.split('_')[0]).defense;
     });
 
@@ -384,7 +362,6 @@ function endCurrentTurnAndStartNext(gameId) {
     game.attackingCreatures = [];
     game.blockingAssignments = {};
 
-    console.log(`[Game ${gameId}] Turn ended for ${currentPlayerId}. Next turn for ${nextPlayerId}`);
     emitFullGameState(gameId);
 
     if (nextPlayerId === AI_PLAYER_ID) {
@@ -400,7 +377,6 @@ io.on('connection', (socket) => {
   console.log(`[Server] Client connected: ${socket.id}`);
 
   socket.on('start_online_game', () => {
-    console.log(`[Server] ${socket.id} wants to start an online game.`);
     if (waitingPlayer && waitingPlayer.id !== socket.id) {
         const player2 = socket;
         const player1 = waitingPlayer;
@@ -417,6 +393,13 @@ io.on('connection', (socket) => {
         waitingPlayer = null;
     }
     startGame(socket.id, AI_PLAYER_ID);
+  });
+
+  socket.on('request_game_state', () => {
+    const gameId = socket.gameId;
+    if (gameId && games[gameId]) {
+        emitFullGameState(gameId);
+    }
   });
 
   socket.on('play_card', (cardId, playType) => {
@@ -509,7 +492,6 @@ io.on('connection', (socket) => {
     if (player.isTurn || game.currentPhase !== GAME_PHASES.DECLARE_BLOCKERS) return;
 
     game.blockingAssignments = assignments;
-    console.log(`[Game ${gameId}] Player ${socket.id} declared blockers:`, assignments);
     emitFullGameState(gameId);
   });
   
@@ -517,7 +499,6 @@ io.on('connection', (socket) => {
     console.log(`[Server] Client disconnected: ${socket.id}`);
     if (waitingPlayer && waitingPlayer.id === socket.id) {
       waitingPlayer = null;
-      console.log(`[Server] Player ${socket.id} removed from waiting queue.`);
     }
     const gameId = socket.gameId;
     if (gameId && games[gameId]) {
@@ -529,7 +510,6 @@ io.on('connection', (socket) => {
             }
         }
         delete games[gameId];
-        console.log(`[Game ${gameId}] Game ended due to disconnect.`);
     }
   });
 });
