@@ -571,6 +571,9 @@ const App = () => {
   };
 
   const handleCardAction = (card, actionType) => {
+    // --- DEBUG: Log every action received by this handler ---
+    console.log(`[handleCardAction] Action: "${actionType}", Mode: ${gameMode}`, card);
+
     if (actionType === 'hover') {
       setSelectedCardDetail(card);
       return;
@@ -580,7 +583,9 @@ const App = () => {
       return;
     }
 
+    // Centralized logic for solo vs online
     if (gameMode === 'online') {
+      console.log('[handleCardAction] Handling as ONLINE action.');
       switch (actionType) {
         case 'play':
           socket.emit('play_card', card.id, 'field');
@@ -589,31 +594,42 @@ const App = () => {
           socket.emit('play_card', card.id, 'mana');
           break;
         default:
+          console.log(`[handleCardAction] Unknown online action: ${actionType}`);
           break;
       }
       return;
     }
 
+    // --- Solo Mode Actions ---
     if (!isYourTurn && actionType !== 'block') {
+      console.log('[handleCardAction] Ignoring action: Not your turn.');
       return;
     }
 
+    console.log('[handleCardAction] Handling as SOLO action.');
     switch (actionType) {
       case 'playToMana': {
         const cardInHand = playerHand.find(c => c.id === card.id);
         if (cardInHand) {
+          console.log('[handleCardAction] Moving card to mana zone.');
           setPlayerHand(prev => prev.filter(c => c.id !== card.id));
           setYourManaZone(prev => [...prev, card]);
           setYourMaxMana(prev => prev + 1);
           setMessage(`${card.name}をマナに置きました`);
+        } else {
+          console.error('[handleCardAction] Card not found in hand for playToMana.', card);
         }
         break;
       }
       case 'play': {
         const cardInHand = playerHand.find(c => c.id === card.id);
-        if (!cardInHand) break;
+        if (!cardInHand) {
+          console.error('[handleCardAction] Card not in hand for "play" action.', card);
+          break;
+        }
 
         if (yourCurrentMana >= card.manaCost) {
+          console.log('[handleCardAction] Playing card to field.');
           setYourCurrentMana(prev => prev - card.manaCost);
           setPlayerHand(prev => prev.filter(c => c.id !== card.id));
 
@@ -624,7 +640,8 @@ const App = () => {
             handleCardEffect(card);
           }
         } else {
-            setMessage('マナが足りません');
+          console.log('[handleCardAction] Not enough mana.');
+          setMessage('マナが足りません');
         }
         break;
       }
@@ -670,6 +687,7 @@ const App = () => {
         break;
       }
       default:
+        console.log(`[handleCardAction] Unknown solo action: ${actionType}`);
         break;
     }
   };
