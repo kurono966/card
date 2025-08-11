@@ -13,11 +13,21 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "https://neocard-client.vercel.app",
-  "https://neocard-client-2kz3i6ojp-kuronos-projects.vercel.app",
+  "https://neocard-client-dnt9w7wat-kuronos-projects.vercel.app", // Added current client URL
 ];
 
 const corsOptions = {
-  origin: "*",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is in the allowed list or matches the Vercel preview URL pattern
+    if (allowedOrigins.includes(origin) || /https:\/\/neocard-client-.*\.vercel\.app/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   methods: ["GET", "POST", "OPTIONS"],
   credentials: true,
 };
