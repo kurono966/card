@@ -449,11 +449,61 @@ io.on('connection', (socket) => {
             player.currentMana -= card.manaCost;
             card.canAttack = false;
             player.played.push(card);
+
+            // Handle card effects
+            if (card.effect) {
+                console.log(`[Game ${gameId}] Card effect triggered for ${player.id}: ${card.effect}`);
+                if (card.effect === "Draw 1 card") {
+                    if (player.deck.length > 0) {
+                        const drawnCard = player.deck.shift();
+                        player.hand.push(drawnCard);
+                        io.to(player.id).emit('effect_triggered', `You drew a card (${drawnCard.name}) from ${card.name}'s effect!`);
+                        console.log(`[Game ${gameId}] Player ${player.id} drew ${drawnCard.name} due to effect.`);
+                    } else {
+                        io.to(player.id).emit('effect_triggered', `You tried to draw a card from ${card.name}'s effect, but your deck is empty!`);
+                        console.log(`[Game ${gameId}] Player ${player.id} tried to draw, but deck is empty for effect.`);
+                    }
+                } else if (card.effect === "Deal 2 damage to opponent creature") {
+                    io.to(player.id).emit('request_target_for_effect', {
+                        type: 'deal_damage',
+                        amount: 2,
+                        sourceCardId: card.id,
+                        message: `Select an opponent's creature to deal 2 damage to.`
+                    });
+                    console.log(`[Game ${gameId}] Player ${player.id} played ${card.name}, requesting target for 2 damage.`);
+                }
+            }
         } else {
             player.hand.push(card); // Return card if not enough mana
         }
     }
     emitFullGameState(gameId);
+  });
+
+  socket.on('resolve_effect_with_target', ({ sourceCardId, targetId }) => {
+    const gameId = socket.gameId;
+    const game = games[gameId];
+    if (!game || !game.gameActive) return;
+    const player = game.players[socket.id];
+    const opponentId = game.playerOrder.find(id => id !== player.id);
+    const opponent = game.players[opponentId];
+
+    const sourceCard = player.played.find(c => c.id === sourceCardId);
+    if (!sourceCard || !sourceCard.effect) return;
+
+    if (sourceCard.effect === "Deal 2 damage to opponent creature") {
+        const targetCard = opponent.played.find(c => c.id === targetId);
+        if (targetCard) {
+            targetCard.defense -= 2;
+            console.log(`[Game ${gameId}] Card ${targetCard.name} took 2 damage from ${sourceCard.name}.`);
+            if (targetCard.defense <= 0) {
+                opponent.played = opponent.played.filter(c => c.id !== targetId);
+                opponent.graveyard.push(targetCard);
+                console.log(`[Game ${gameId}] Card ${targetCard.name} was destroyed.`);
+            }
+            emitFullGameState(gameId);
+        }
+    }
   });
 
   socket.on('next_phase', () => {
