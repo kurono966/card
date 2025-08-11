@@ -330,7 +330,15 @@ function endCurrentTurnAndStartNext(gameId) {
   const currentPlayer = game.players[currentPlayerId];
   if (currentPlayer) {
     currentPlayer.isTurn = false;
-    currentPlayer.played.forEach(c => { c.defense = allCards.find(card => card.id === c.id.split('_')[0]).defense; });
+    // Reset defense values safely
+    currentPlayer.played.forEach(c => {
+        const originalCard = allCards.find(card => card.id === c.id.split('_')[0]);
+        if (originalCard) {
+            c.defense = originalCard.defense;
+        } else {
+            console.error(`[Error] Original card not found for ID: ${c.id}`);
+        }
+    });
   }
 
   game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playerOrder.length;
@@ -343,10 +351,16 @@ function endCurrentTurnAndStartNext(gameId) {
     nextPlayer.currentMana = nextPlayer.maxMana;
     nextPlayer.manaPlayedThisTurn = false;
     
+    // Untap cards, allow them to attack, and reset defense safely
     nextPlayer.played.forEach(card => {
         card.isTapped = false;
         card.canAttack = true;
-        card.defense = allCards.find(c => c.id === c.id.split('_')[0]).defense;
+        const originalCard = allCards.find(c => c.id === card.id.split('_')[0]);
+        if (originalCard) {
+            card.defense = originalCard.defense;
+        } else {
+            console.error(`[Error] Original card not found for ID: ${card.id}`);
+        }
     });
 
     if (nextPlayer.deck.length > 0) {
