@@ -591,6 +591,57 @@ const App = () => {
       )}
 
       {/* Damage Indicators */}
+      {gameState && damageEffects.map((effect, index) => {
+        const isPlayer = effect.targetId === socket.id;
+        const isOpponentPlayer = gameState && effect.targetId === gameState.playerOrder.find(id => id !== socket.id);
+        const isMyCreature = yourPlayedCards.some(card => card.id === effect.targetId);
+        const isOpponentCreature = opponentPlayedCards.some(card => card.id === effect.targetId);
+
+        let positionStyle = {};
+        if (isPlayer) {
+          positionStyle = { bottom: '10px', left: '10px' }; // Example position for player life
+        } else if (isOpponentPlayer) {
+          positionStyle = { top: '10px', right: '10px' }; // Example position for opponent life
+        } else if (isMyCreature || isOpponentCreature) {
+          // For creatures, you'd need to find their actual position on the field
+          // This is a placeholder, actual positioning would be more complex
+          const targetCard = (isMyCreature ? yourPlayedCards : opponentPlayedCards).find(card => card.id === effect.targetId);
+          if (targetCard) {
+            // This would ideally be based on the card's rendered position
+            // For now, just a generic position or you'd pass down refs/coordinates
+            positionStyle = { position: 'absolute', transform: 'translate(-50%, -50%)', zIndex: 100 };
+          }
+        }
+
+        return (
+          <div
+            key={index}
+            style={{
+              position: 'absolute',
+              backgroundColor: effect.type === 'creature_destroyed' ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)',
+              color: 'white',
+              padding: '5px 10px',
+              borderRadius: '5px',
+              fontSize: '1.5em',
+              fontWeight: 'bold',
+              animation: 'fade-out 1.5s forwards',
+              ...positionStyle,
+            }}
+          >
+            {effect.type === 'creature_destroyed' ? 'DESTROYED!' : `-${effect.amount}`}
+          </div>
+        );
+      })}
+
+      <style jsx="true">{`
+        @keyframes fade-out {
+          from { opacity: 1; transform: translateY(0); }
+          to { opacity: 0; transform: translateY(-20px); }
+        }
+      `}</style>
+    </DndProvider>
+
+      {/* Damage Indicators */}
       {damageEffects.map((effect, index) => {
         const isPlayer = effect.targetId === socket.id;
         const isOpponentPlayer = effect.targetId === gameState.playerOrder.find(id => id !== socket.id);
