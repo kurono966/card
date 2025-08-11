@@ -291,22 +291,38 @@ async function aiTurnLogic(gameId) {
         await delay(1000);
     }
 
-    // Play creatures if possible
-    let playedCreature;
+    // Play any playable cards (creatures, spells, etc.)
+    let playedCard;
     do {
-        playedCreature = false;
-        const playableCreatures = ai.hand.filter(c => c.type === 'Creature' && c.manaCost <= ai.currentMana);
-        if (playableCreatures.length > 0) {
-            const creatureToPlay = playableCreatures[0];
-            ai.hand = ai.hand.filter(c => c.id !== creatureToPlay.id);
-            ai.currentMana -= creatureToPlay.manaCost;
-            creatureToPlay.canAttack = false;
-            ai.played.push(creatureToPlay);
-            playedCreature = true;
+        playedCard = false;
+        // Find any card with a mana cost that AI can afford
+        const playableCards = ai.hand.filter(c => c.manaCost !== undefined && c.manaCost <= ai.currentMana);
+        
+        if (playableCards.length > 0) {
+            const cardToPlay = playableCards[0];
+            
+            console.log(`[AI] [Game ${gameId}] AI is playing card: ${cardToPlay.name}`);
+
+            ai.hand = ai.hand.filter(c => c.id !== cardToPlay.id);
+            ai.currentMana -= cardToPlay.manaCost;
+
+            cardToPlay.canAttack = false; 
+            ai.played.push(cardToPlay);
+            
+            if (cardToPlay.effect) {
+                if (cardToPlay.effect === "Draw 1 card") {
+                    if (ai.deck.length > 0) {
+                        ai.hand.push(ai.deck.shift());
+                        console.log(`[AI] [Game ${gameId}] AI drew a card from ${cardToPlay.name}'s effect.`);
+                    }
+                }
+            }
+
+            playedCard = true;
             emitFullGameState(gameId);
             await delay(1000);
         }
-    } while (playedCreature);
+    } while (playedCard);
 
     game.currentPhase = GAME_PHASES.DECLARE_ATTACKERS;
     emitFullGameState(gameId);
@@ -368,7 +384,6 @@ function aiBlockLogic(gameId) {
         resolveCombat(gameId);
         game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
         emitFullGameState(gameId);
-        // Since it's the human's turn, we wait for them to advance to the end phase.
     }, 1000);
 }
 
