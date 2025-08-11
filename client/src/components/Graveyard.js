@@ -70,7 +70,7 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
             defense={card.defense}
             abilities={card.abilities}
             isPlayed={true} // 墓地のカードは常にプレイ済み
-            onCardAction={handleCardAction}
+            onCardAction={onCardAction}
           />
         ))
       )}
