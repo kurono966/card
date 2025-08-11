@@ -319,6 +319,7 @@ async function aiTurnLogic(gameId) {
             attacker.isTapped = true;
             game.attackingCreatures.push({ attackerId: attacker.id, targetId: 'player' });
         });
+        console.log(`[AI] [Game ${gameId}] AI declares attack with ${attackers.length} creatures.`);
         game.currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
     } else {
         game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
@@ -332,6 +333,43 @@ async function aiTurnLogic(gameId) {
         await delay(500);
         endCurrentTurnAndStartNext(gameId);
     }
+}
+
+function aiBlockLogic(gameId) {
+    const game = games[gameId];
+    if (!game || !game.gameActive) return;
+
+    const humanPlayerId = game.playerOrder.find(id => id !== AI_PLAYER_ID);
+    const aiPlayer = game.players[AI_PLAYER_ID];
+
+    if (game.players[humanPlayerId].isTurn === false || game.attackingCreatures.length === 0) {
+        return;
+    }
+    
+    console.log(`[AI] [Game ${gameId}] AI is deciding blockers.`);
+
+    const availableBlockers = aiPlayer.played.filter(c => !c.isTapped);
+    game.blockingAssignments = {};
+
+    for (const attackInfo of game.attackingCreatures) {
+        if (availableBlockers.length > 0) {
+            const blocker = availableBlockers.shift();
+            game.blockingAssignments[attackInfo.attackerId] = [blocker.id];
+            console.log(`[AI] [Game ${gameId}] AI assigns ${blocker.name} to block attacker.`);
+        } else {
+            break;
+        }
+    }
+    
+    console.log(`[AI] [Game ${gameId}] AI finished blocking. Moving to combat resolution.`);
+    emitFullGameState(gameId);
+
+    setTimeout(() => {
+        resolveCombat(gameId);
+        game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
+        emitFullGameState(gameId);
+        // Since it's the human's turn, we wait for them to advance to the end phase.
+    }, 1000);
 }
 
 // --- Turn Management ---
@@ -360,7 +398,6 @@ function endCurrentTurnAndStartNext(gameId) {
 
   if (nextPlayer) {
     nextPlayer.isTurn = true;
-    // nextPlayer.maxMana++; // Removed: Max mana now increases only when playing a card to mana zone
     nextPlayer.currentMana = nextPlayer.maxMana; // Refill mana to the max
     nextPlayer.manaPlayedThisTurn = false;
     
@@ -523,24 +560,26 @@ io.on('connection', (socket) => {
                 game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
             } else {
                 game.currentPhase = GAME_PHASES.DECLARE_BLOCKERS;
+                const defenderPlayerId = game.playerOrder.find(id => id !== player.id);
+                if (defenderPlayerId === AI_PLAYER_ID) {
+                    setTimeout(() => aiBlockLogic(gameId), 1000);
+                }
             }
             break;
         case GAME_PHASES.DECLARE_BLOCKERS:
             resolveCombat(gameId);
             game.currentPhase = GAME_PHASES.MAIN_PHASE_2;
 
-            // If it's still the AI's turn after combat, automatically finish the turn
             const currentPlayerId = game.playerOrder[game.currentPlayerIndex];
             if (currentPlayerId === AI_PLAYER_ID) {
                 console.log(`[AI] [Game ${gameId}] Combat resolved, moving to end phase.`);
                 game.currentPhase = GAME_PHASES.END_PHASE;
-                emitFullGameState(gameId); // Show end phase briefly
+                emitFullGameState(gameId);
                 
-                // Use setTimeout to avoid blocking and give a sense of flow
                 setTimeout(() => {
                     endCurrentTurnAndStartNext(gameId);
-                }, 1000); // 1 second delay before starting human turn
-                return; // Important to return here
+                }, 1000);
+                return;
             }
             break;
         case GAME_PHASES.MAIN_PHASE_2:
