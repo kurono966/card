@@ -6,21 +6,21 @@ const ItemTypes = {
 };
 
 const Card = ({ 
-  id, name, value, manaCost, imageUrl, effect, description, attack, defense, 
+  id, name, manaCost, imageUrl, effect, description, attack, defense, 
   onCardAction, isPlayed, isTapped, isAttacking, 
   isSelectedAttacker, isSelectedBlocker, isSelectedTarget, isTempSelectedBlocker,
   isTargetableForEffect // 新しいプロパティ
 }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { id, name, value, manaCost, imageUrl, effect, description, attack, defense },
+    item: { id, name, manaCost, imageUrl, effect, description, attack, defense },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }));
 
   const handleMouseEnter = () => {
-    if (onCardAction) onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'hover');
+    if (onCardAction) onCardAction({ id, name, manaCost, imageUrl, effect, description, attack, defense }, 'hover');
   };
 
   const handleMouseLeave = () => {
@@ -28,7 +28,7 @@ const Card = ({
   };
 
   const handleClick = () => {
-    if (onCardAction) onCardAction({ id, name, value, manaCost, imageUrl, effect, description, attack, defense }, 'click');
+    if (onCardAction) onCardAction({ id, name, manaCost, imageUrl, effect, description, attack, defense }, 'click');
   };
 
   const borderColor = isTargetableForEffect ? '#00ff00' : // ターゲット可能なカードは緑色

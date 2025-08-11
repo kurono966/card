@@ -534,7 +534,7 @@ io.on('connection', (socket) => {
     emitFullGameState(gameId);
   });
 
-  socket.on('resolve_effect_target', ({ sourceCardId, targetId }) => {
+  socket.on('resolve_effect_target', ({ sourceCardId, targetCardId }) => {
     const gameId = socket.gameId;
     const game = games[gameId];
     if (!game || !game.gameActive) return;
@@ -542,7 +542,7 @@ io.on('connection', (socket) => {
     const opponentId = game.playerOrder.find(id => id !== player.id);
     const opponent = game.players[opponentId];
 
-    console.log(`[Server] resolve_effect_target received. sourceCardId: ${sourceCardId}, targetId: ${targetId}`);
+    console.log(`[Server] resolve_effect_target received. sourceCardId: ${sourceCardId}, targetCardId: ${targetCardId}`);
     console.log(`[Server] Opponent played cards:`, opponent.played.map(c => c.id)); // Debug log
 
     const sourceCard = player.played.find(c => c.id === sourceCardId);
@@ -552,19 +552,19 @@ io.on('connection', (socket) => {
     }
 
     if (sourceCard.effect === "Deal 2 damage to opponent creature") {
-        const targetCard = opponent.played.find(c => c.id === targetId);
+        const targetCard = opponent.played.find(c => c.id === targetCardId);
         if (targetCard) {
             console.log(`[Server] Target card found: ${targetCard.name} (ID: ${targetCard.id}), current defense: ${targetCard.defense}`); // Debug log
             targetCard.defense -= 2;
             console.log(`[Server] Target card defense after damage: ${targetCard.defense}`); // Debug log
             if (targetCard.defense <= 0) {
-                opponent.played = opponent.played.filter(c => c.id !== targetId);
+                opponent.played = opponent.played.filter(c => c.id !== targetCardId);
                 opponent.graveyard.push(targetCard);
                 console.log(`[Game ${gameId}] Card ${targetCard.name} was destroyed.`);
             }
             emitFullGameState(gameId);
         } else {
-            console.log(`[Server] Target card with ID ${targetId} not found in opponent.played.`); // Debug log
+            console.log(`[Server] Target card with ID ${targetCardId} not found in opponent.played.`); // Debug log
         }
     }
   });

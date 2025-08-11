@@ -3,7 +3,6 @@ const allCards = [
   {
     id: "card_001",
     name: "すらっこ",
-    value: 1,
     manaCost: 1,
     imageUrl: "/IMG_1.jpg",
     effect: null,
@@ -15,7 +14,6 @@ const allCards = [
   {
     id: "card_002",
     name: "川の精霊",
-    value: 2,
     manaCost: 2,
     imageUrl: "/IMG_2.jpg",
     effect: null,
@@ -27,7 +25,6 @@ const allCards = [
   {
     id: "card_003",
     name: "悪夢",
-    value: 3,
     manaCost: 3,
     imageUrl: "/IMG_3.jpg",
     effect: null,
@@ -39,7 +36,6 @@ const allCards = [
   {
     id: "card_004",
     name: "俊足の斥候",
-    value: 4,
     manaCost: 4,
     imageUrl: "/IMG_4.png",
     effect: null,
@@ -51,7 +47,6 @@ const allCards = [
   {
     id: "card_005",
     name: "神秘のフクロウ",
-    value: 5,
     manaCost: 5,
     imageUrl: "/IMG_5.jpg",
     effect: "Draw 1 card",
@@ -63,7 +58,6 @@ const allCards = [
   {
     id: "card_006",
     name: "炎のエレメンタル",
-    value: 6,
     manaCost: 6,
     imageUrl: "/IMG_6.jpg",
     effect: null,
@@ -75,7 +69,6 @@ const allCards = [
   {
     id: "card_007",
     name: "水の蛇",
-    value: 7,
     manaCost: 7,
     imageUrl: "/IMG_7.jpg",
     effect: null,
@@ -87,7 +80,6 @@ const allCards = [
   {
     id: "card_008",
     name: "雷竜",
-    value: 8,
     manaCost: 8,
     imageUrl: "/IMG_8.jpg",
     effect: null,
@@ -99,7 +91,6 @@ const allCards = [
   {
     id: "card_009",
     name: "古の守護者",
-    value: 9,
     manaCost: 9,
     imageUrl: "/IMG_9.jpg",
     effect: null,
@@ -110,20 +101,18 @@ const allCards = [
   },
   {
     id: "card_010",
-    name: "巨像",
-    value: 10,
-    manaCost: 10,
+    name: "サビ残くん",
+    manaCost: 2,
     imageUrl: "/IMG_10.jpg",
-    effect: null,
-    description: "強力なカードだが、多くのマナを必要とする。",
-    attack: 10,
-    defense: 10,
+    effect: "Draw 1 card",
+    description: "プレイ時、デッキからカードを1枚引く。",
+    attack: 1,
+    defense: 1,
     abilities: [],
   },
   {
     id: "card_011",
     name: "火炎放射器",
-    value: 11,
     manaCost: 3,
     imageUrl: "/IMG_11.jpg",
     effect: "Deal 2 damage to opponent creature",

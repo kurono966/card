@@ -54,7 +54,7 @@ const CardDetail = ({ card, onClose }) => {
         }}
       >
         <div style={{ fontSize: '1em', alignSelf: 'flex-start' }}>Cost: {card.manaCost}</div>
-        <div style={{ fontSize: '2em', fontWeight: 'bold' }}>{card.value}</div>
+        
         <div style={{ fontSize: '1em', alignSelf: 'flex-end' }}></div>
       </div>
       <h3 style={{ marginTop: '15px' }}>{card.name}</h3> {/* カード名称を表示 */}

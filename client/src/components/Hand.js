@@ -25,7 +25,7 @@ const Hand = ({ cards, onCardAction }) => {
             key={card.id} 
             id={card.id} 
             name={card.name} 
-            value={card.value} 
+             
             manaCost={card.manaCost} 
             imageUrl={card.imageUrl} 
             effect={card.effect} 

@@ -62,15 +62,15 @@ const Graveyard = ({ cards, onCardAction, isOpponent = false }) => {
             key={card.id}
             id={card.id}
             name={card.name}
-            value={card.value}
             manaCost={card.manaCost}
             imageUrl={card.imageUrl}
             effect={card.effect}
             description={card.description}
             attack={card.attack}
             defense={card.defense}
-            isPlayed={true} // 墓地のカードはプレイ済み扱い
-            onCardAction={onCardAction} // マウスオーバーイベントを渡す
+            abilities={card.abilities}
+            isPlayed={true} // 墓地のカードは常にプレイ済み
+            onCardAction={handleCardAction}
           />
         ))
       )}
