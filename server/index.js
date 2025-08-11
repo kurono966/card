@@ -112,8 +112,8 @@ function startGame(player1Id, player2Id) {
 
   // First player's turn
   player1State.isTurn = true;
-  player1State.maxMana = 1;
-  player1State.currentMana = 1;
+  player1State.maxMana = 0; // Changed: Start with 0 mana
+  player1State.currentMana = 0; // Changed: Start with 0 mana
 
   const game = {
     id: gameId,
@@ -279,16 +279,19 @@ async function aiTurnLogic(gameId) {
 
     await delay(1000);
 
+    // Play a card as mana if not already done
     if (!ai.manaPlayedThisTurn && ai.hand.length > 0) {
         const cardToPlayAsMana = ai.hand[0];
         ai.hand.shift();
         ai.manaZone.push(cardToPlayAsMana);
+        ai.maxMana++;
         ai.currentMana++;
         ai.manaPlayedThisTurn = true;
         emitFullGameState(gameId);
         await delay(1000);
     }
 
+    // Play creatures if possible
     let playedCreature;
     do {
         playedCreature = false;
@@ -357,8 +360,8 @@ function endCurrentTurnAndStartNext(gameId) {
 
   if (nextPlayer) {
     nextPlayer.isTurn = true;
-    nextPlayer.maxMana++;
-    nextPlayer.currentMana = nextPlayer.maxMana;
+    // nextPlayer.maxMana++; // Removed: Max mana now increases only when playing a card to mana zone
+    nextPlayer.currentMana = nextPlayer.maxMana; // Refill mana to the max
     nextPlayer.manaPlayedThisTurn = false;
     
     // Untap cards, allow them to attack, and reset defense safely
@@ -434,9 +437,10 @@ io.on('connection', (socket) => {
 
     if (playType === 'mana') {
         if (player.manaPlayedThisTurn) {
-            player.hand.push(card);
+            player.hand.push(card); // Return card if mana already played
         } else {
             player.manaZone.push(card);
+            player.maxMana++;
             player.currentMana++;
             player.manaPlayedThisTurn = true;
         }
@@ -446,7 +450,7 @@ io.on('connection', (socket) => {
             card.canAttack = false;
             player.played.push(card);
         } else {
-            player.hand.push(card);
+            player.hand.push(card); // Return card if not enough mana
         }
     }
     emitFullGameState(gameId);
