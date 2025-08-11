@@ -398,11 +398,12 @@ function endCurrentTurnAndStartNext(gameId) {
     currentPlayer.isTurn = false;
     // Reset defense values safely
     currentPlayer.played.forEach(c => {
-        const originalCard = allCards.find(card => card.id === c.id.split('_')[0]);
+        const originalCardId = c.id.split('_').slice(0, 2).join('_'); // Fix: Correctly get original card ID
+        const originalCard = allCards.find(card => card.id === originalCardId);
         if (originalCard) {
             c.defense = originalCard.defense;
         } else {
-            console.error(`[Error] Original card not found for ID: ${c.id}`);
+            console.error(`[Error] Original card not found for ID: ${originalCardId} (from ${c.id})`);
         }
     });
   }
@@ -420,11 +421,12 @@ function endCurrentTurnAndStartNext(gameId) {
     nextPlayer.played.forEach(card => {
         card.isTapped = false;
         card.canAttack = true;
-        const originalCard = allCards.find(c => c.id === card.id.split('_')[0]);
+        const originalCardId = card.id.split('_').slice(0, 2).join('_'); // Fix: Correctly get original card ID
+        const originalCard = allCards.find(c => c.id === originalCardId);
         if (originalCard) {
             card.defense = originalCard.defense;
         } else {
-            console.error(`[Error] Original card not found for ID: ${card.id}`);
+            console.error(`[Error] Original card not found for ID: ${originalCardId} (from ${card.id})`);
         }
     });
 
@@ -532,7 +534,7 @@ io.on('connection', (socket) => {
     emitFullGameState(gameId);
   });
 
-  socket.on('resolve_effect_with_target', ({ sourceCardId, targetId }) => {
+  socket.on('resolve_effect_target', ({ sourceCardId, targetId }) => {
     const gameId = socket.gameId;
     const game = games[gameId];
     if (!game || !game.gameActive) return;
