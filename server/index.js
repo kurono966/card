@@ -542,20 +542,29 @@ io.on('connection', (socket) => {
     const opponentId = game.playerOrder.find(id => id !== player.id);
     const opponent = game.players[opponentId];
 
+    console.log(`[Server] resolve_effect_target received. sourceCardId: ${sourceCardId}, targetId: ${targetId}`);
+    console.log(`[Server] Opponent played cards:`, opponent.played.map(c => c.id)); // Debug log
+
     const sourceCard = player.played.find(c => c.id === sourceCardId);
-    if (!sourceCard || !sourceCard.effect) return;
+    if (!sourceCard || !sourceCard.effect) {
+        console.log(`[Server] Source card not found or has no effect.`); // Debug log
+        return;
+    }
 
     if (sourceCard.effect === "Deal 2 damage to opponent creature") {
         const targetCard = opponent.played.find(c => c.id === targetId);
         if (targetCard) {
+            console.log(`[Server] Target card found: ${targetCard.name} (ID: ${targetCard.id}), current defense: ${targetCard.defense}`); // Debug log
             targetCard.defense -= 2;
-            console.log(`[Game ${gameId}] Card ${targetCard.name} took 2 damage from ${sourceCard.name}.`);
+            console.log(`[Server] Target card defense after damage: ${targetCard.defense}`); // Debug log
             if (targetCard.defense <= 0) {
                 opponent.played = opponent.played.filter(c => c.id !== targetId);
                 opponent.graveyard.push(targetCard);
                 console.log(`[Game ${gameId}] Card ${targetCard.name} was destroyed.`);
             }
             emitFullGameState(gameId);
+        } else {
+            console.log(`[Server] Target card with ID ${targetId} not found in opponent.played.`); // Debug log
         }
     }
   });
