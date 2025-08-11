@@ -9,7 +9,8 @@ const Card = ({
   id, name, manaCost, imageUrl, effect, description, attack, defense, 
   onCardAction, isPlayed, isTapped, isAttacking, 
   isSelectedAttacker, isSelectedBlocker, isSelectedTarget, isTempSelectedBlocker,
-  isTargetableForEffect // 新しいプロパティ
+  isTargetableForEffect, // 新しいプロパティ
+  isDamaged // ★★★ 追加 ★★★
 }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
@@ -37,6 +38,7 @@ const Card = ({
                       isSelectedAttacker ? '#f1fa8c' :  // 攻撃選択中の自分のクリーチャー
                       isSelectedBlocker ? '#50fa7b' :   // ブロック選択中の自分のクリーチャー
                       isAttacking ? '#ffb86c' :         // 攻撃中のクリーチャー
+                      isDamaged ? '#ff0000' : // ★★★ 追加: ダメージを受けたカードは赤色 ★★★
                       '#f8f8f2';
 
   return (

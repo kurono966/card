@@ -225,14 +225,20 @@ function resolveCombat(gameId) {
                 }
             });
             attackerCard.defense -= totalBlockerAttack;
+            // Emit damage effect for attacker
+            io.to(attackerPlayerId).emit('damage_effect', { targetId: attackerCard.id, amount: totalBlockerAttack, type: 'creature_damage' });
 
             const firstBlocker = defenderPlayer.played.find(c => c.id === blockers[0]);
             if (firstBlocker) {
                 firstBlocker.defense -= creatureCopies[attackerCard.id].attack;
+                // Emit damage effect for blocker
+                io.to(defenderPlayerId).emit('damage_effect', { targetId: firstBlocker.id, amount: creatureCopies[attackerCard.id].attack, type: 'creature_damage' });
             }
         } else {
             defenderPlayer.life -= creatureCopies[attackerCard.id].attack;
             console.log(`[Game ${gameId}] Player ${defenderPlayerId} life: ${defenderPlayer.life}`);
+            // Emit damage effect for player
+            io.to(defenderPlayerId).emit('damage_effect', { targetId: defenderPlayerId, amount: creatureCopies[attackerCard.id].attack, type: 'player_damage' });
         }
     });
 
@@ -240,6 +246,8 @@ function resolveCombat(gameId) {
     attackerPlayer.played = attackerPlayer.played.filter(c => {
         if (c.defense <= 0) {
             attackerGraveyard.push(creatureCopies[c.id]);
+            // Emit creature destroyed effect
+            io.to(attackerPlayerId).emit('damage_effect', { targetId: c.id, amount: 0, type: 'creature_destroyed' });
             return false;
         }
         return true;
@@ -250,6 +258,8 @@ function resolveCombat(gameId) {
     defenderPlayer.played = defenderPlayer.played.filter(c => {
         if (c.defense <= 0) {
             defenderGraveyard.push(creatureCopies[c.id]);
+            // Emit creature destroyed effect
+            io.to(defenderPlayerId).emit('damage_effect', { targetId: c.id, amount: 0, type: 'creature_destroyed' });
             return false;
         }
         return true;
@@ -557,10 +567,14 @@ io.on('connection', (socket) => {
             console.log(`[Server] Target card found: ${targetCard.name} (ID: ${targetCard.id}), current defense: ${targetCard.defense}`); // Debug log
             targetCard.defense -= 2;
             console.log(`[Server] Target card defense after damage: ${targetCard.defense}`); // Debug log
+            // Emit damage effect for creature
+            io.to(player.id).emit('damage_effect', { targetId: targetCard.id, amount: 2, type: 'creature_damage' });
             if (targetCard.defense <= 0) {
                 opponent.played = opponent.played.filter(c => c.id !== targetCardId);
                 opponent.graveyard.push(targetCard);
                 console.log(`[Game ${gameId}] Card ${targetCard.name} was destroyed.`);
+                // Emit creature destroyed effect
+                io.to(player.id).emit('damage_effect', { targetId: targetCard.id, amount: 0, type: 'creature_destroyed' });
             }
             emitFullGameState(gameId);
         } else {
