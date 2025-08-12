@@ -19,7 +19,45 @@ const serverUrl = isLocalDevelopment
 
 console.log(`Connecting to ${isLocalDevelopment ? 'local' : 'remote'} server:`, serverUrl);
 
-// Socket instance will be created inside the component
+// Initialize socket with autoConnect set to false
+const socket = io(serverUrl, {
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 10000,
+  timeout: 20000,
+  withCredentials: true,
+  // Try both transports
+  transports: ['polling', 'websocket'],
+  // Don't connect automatically - we'll connect manually after setting up handlers
+  autoConnect: false,
+  // Add query parameters for debugging
+  query: {
+    clientType: 'web',
+    version: '1.0.0'
+  }
+});
+
+// Add detailed logging for all events
+const events = [
+  'connect',
+  'connect_error',
+  'connect_timeout',
+  'reconnect',
+  'reconnect_attempt',
+  'reconnecting',
+  'reconnect_error',
+  'reconnect_failed',
+  'disconnect',
+  'error'
+];
+
+events.forEach(event => {
+  socket.on(event, (data) => {
+    console.log(`[Socket.io] ${event}`, data || '');
+  });
+});
+
 
 
 const ItemTypes = {
@@ -27,146 +65,10 @@ const ItemTypes = {
 };
 
 const App = () => {
-  // Connection state
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [socket, setSocket] = useState(null);
-  const [socketConnected, setSocketConnected] = useState(false);
-  
-  // Game state
   const [gameStarted, setGameStarted] = useState(false);
   const [gameMode, setGameMode] = useState(null); // 'online' or 'solo'
   const [message, setMessage] = useState('Neocardにようこそ！');
-  
-  // Player state
-  const [playerState, setPlayerState] = useState({
-    hand: [],
-    deck: [],
-    graveyard: [],
-    mana: 0,
-    maxMana: 0,
-    life: 20,
-    playedCards: [],
-    deckSize: 0
-  });
-  
-  // Opponent state
-  const [opponentState, setOpponentState] = useState({
-    hand: [],
-    deck: [],
-    graveyard: [],
-    mana: 0,
-    maxMana: 0,
-    life: 20,
-    playedCards: [],
-    deckSize: 0
-  });
-  
-  // Game flow state
-  const [gameFlow, setGameFlow] = useState({
-    isYourTurn: false,
-    currentPhase: 'waiting',
-    attackingCreatures: [],
-    blockingAssignments: {}
-  });
-  
-  // UI state
-  const [uiState, setUiState] = useState({
-    selectedCard: null,
-    showCardDetail: false,
-    currentCardDetail: null,
-    effectMessage: null,
-    damageEffects: []
-  });
-
-  // Initialize socket when component mounts
-  useEffect(() => {
-    console.log('Initializing socket connection to:', serverUrl);
-    const newSocket = io(serverUrl, {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 10000,
-      withCredentials: true,
-      transports: ['websocket'],
-      autoConnect: false,
-      query: {
-        clientType: 'web',
-        version: '1.0.0',
-        timestamp: Date.now()
-      },
-    });
-
-    // Set up event handlers
-    newSocket.on('connect', () => {
-      console.log('Socket connected with ID:', newSocket.id);
-      setConnectionStatus('connected');
-      setMessage('Connected to server!');
-    });
-
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error.message);
-      setConnectionStatus('error');
-      setMessage('Failed to connect to server. Please check your internet connection and try again.');
-      
-      if (!isLocalDevelopment) {
-        setMessage(prev => `${prev} The game server might be down.`);
-      }
-    });
-
-    newSocket.on('disconnect', (reason) => {
-      console.log('Socket disconnected. Reason:', reason);
-      setConnectionStatus('disconnected');
-      
-      if (reason === 'io server disconnect') {
-        console.log('Server intentionally disconnected the socket');
-        setMessage('Disconnected from server. Please refresh the page to reconnect.');
-      } else {
-        setMessage('Connection lost. Attempting to reconnect...');
-      }
-    });
-
-    // Add detailed logging for all events
-    const events = [
-      'connect',
-      'connect_error',
-      'connect_timeout',
-      'reconnect',
-      'reconnect_attempt',
-      'reconnecting',
-      'reconnect_error',
-      'reconnect_failed',
-      'disconnect',
-      'error'
-    ];
-
-    events.forEach(event => {
-      newSocket.on(event, (data) => {
-        console.log(`[Socket.io] ${event}`, data || '');
-      });
-    });
-
-    // Connect the socket
-    newSocket.connect();
-    setSocket(newSocket);
-
-    // Clean up on unmount
-    return () => {
-      events.forEach(event => {
-        newSocket.off(event);
-      });
-      newSocket.disconnect();
-    };
-  }, []);
-
-  // Function to manually attempt reconnection
-  const attemptReconnect = useCallback(() => {
-    if (socket) {
-      setMessage('Connecting to server...');
-      setConnectionStatus('connecting');
-      socket.connect();
-    }
-  }, [socket]);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
     // Set up event listeners when component mounts
@@ -266,7 +168,6 @@ const App = () => {
   const [isYourTurn, setIsYourTurn] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null);
   const [effectMessage, setEffectMessage] = useState(null);
-  const [damageEffects, setDamageEffects] = useState([]); // New state for damage effects
   const [currentPhase, setCurrentPhase] = useState('main_phase_1');
   const [attackingCreatures, setAttackingCreatures] = useState([]);
   const [blockingAssignments, setBlockingAssignments] = useState({});
@@ -360,16 +261,6 @@ const App = () => {
       // Optionally, highlight potential targets here if needed
     });
 
-    // --- New Damage Effect Listener ---
-    socket.on('damage_effect', (data) => {
-      console.log('[App.js] Received damage_effect:', data);
-      setDamageEffects(prev => [...prev, data]);
-      // Remove effect after a short duration
-      setTimeout(() => {
-        setDamageEffects(prev => prev.filter(effect => effect.targetId !== data.targetId || effect.type !== data.type));
-      }, 1500); // Effect duration
-    });
-
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -377,7 +268,6 @@ const App = () => {
       socket.off('game_state');
       socket.off('effect_triggered');
       socket.off('request_target_for_effect'); // Clean up new listener
-      socket.off('damage_effect'); // Clean up new listener
     };
   }, []); // Add empty dependency array and closing bracket
 
@@ -526,29 +416,14 @@ const App = () => {
     );
   }
 
-  // Connection status indicator component
-  const ConnectionStatus = () => (
-    <div className={`${styles.connectionStatus} ${styles[connectionStatus]}`}>
-      {connectionStatus === 'connected' && 'オンライン接続中'}
-      {connectionStatus === 'connecting' && '接続中...'}
-      {connectionStatus === 'error' && (
-        <>
-          サーバーに接続できません
-          <button 
-            onClick={attemptReconnect}
-            className={styles.reconnectButton}
-          >
-            再接続
-          </button>
-        </>
-      )}
-    </div>
-  );
-
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={styles.appContainer}>
-        {gameMode && <ConnectionStatus />}
+        {gameMode === 'online' && (
+          <div className={styles.connectionStatus}>
+            {socket.connected ? 'オンライン接続中' : '接続中...'}
+          </div>
+        )}
         <h1 className={styles.messageHeader}>{message}</h1>
         <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
         <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>
@@ -565,17 +440,16 @@ const App = () => {
               <div className={styles.playedCardsArea}>
                 {opponentPlayedCards.map(card => (
                   <Card
-                  key={card.id} {...card}
-                  onCardAction={handleCardAction}
-                  isPlayed={true}
-                  isTapped={card.isTapped || false}
-                  isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
-                  isSelectedAttacker={false}
-                  isSelectedBlocker={false}
-                  isSelectedTarget={selectedTarget === card.id}
-                  isTargetableForEffect={isTargetingEffect && opponentPlayedCards.some(c => c.id === card.id)}
-                  isDamaged={damageEffects.some(effect => effect.targetId === card.id && (effect.type === 'creature_damage' || effect.type === 'creature_destroyed'))}
-                />
+                    key={card.id} {...card}
+                    onCardAction={handleCardAction}
+                    isPlayed={true}
+                    isTapped={card.isTapped || false}
+                    isAttacking={attackingCreatures.some(a => a.attackerId === card.id)}
+                    isSelectedAttacker={false}
+                    isSelectedBlocker={false}
+                    isSelectedTarget={selectedTarget === card.id}
+                    isTargetableForEffect={isTargetingEffect && opponentPlayedCards.some(c => c.id === card.id)}
+                  />
                 ))}
               </div>
               <div className={styles.opponentManaZoneContainer}>
@@ -615,7 +489,6 @@ const App = () => {
                   isSelectedBlocker={blockingAssignments[selectedTarget] && blockingAssignments[selectedTarget].includes(card.id)} // 確定したブロッカー
                   isTempSelectedBlocker={tempSelectedBlocker === card.id} // 仮選択中のブロッカー
                   isSelectedTarget={selectedTarget === card.id}
-                  isDamaged={damageEffects.some(effect => effect.targetId === card.id && (effect.type === 'creature_damage' || effect.type === 'creature_destroyed'))}
                 />
               ))}
             </div>
@@ -694,109 +567,10 @@ const App = () => {
         </div>
       )}
       {isTargetingEffect && effectMessageForTarget && (
-        <div style={{
-          position: 'fixed',
-          top: '80px', // 画面上部から20px
-          left: '20px', // 画面左部から20px
-          backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'yellow', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
+        <div style={{ position: 'fixed', top: '80px', left: '20px', backgroundColor: 'rgba(0, 0, 0, 0.8)', color: 'yellow', padding: '20px', borderRadius: '10px', zIndex: 1001, fontSize: '1.5rem', fontWeight: 'bold' }}>
           {effectMessageForTarget}
         </div>
       )}
-
-      {/* Damage Indicators */}
-      {damageEffects.map((effect, index) => {
-        const isPlayer = effect.targetId === socket.id;
-        // Simplified check for opponent - if it's not the player and not a creature, assume it's the opponent
-        const isOpponentPlayer = !isPlayer && !yourPlayedCards.some(card => card.id === effect.targetId);
-        const isMyCreature = yourPlayedCards.some(card => card.id === effect.targetId);
-        const isOpponentCreature = opponentPlayedCards.some(card => card.id === effect.targetId);
-
-        let positionStyle = {};
-        if (isPlayer) {
-          positionStyle = { bottom: '10px', left: '10px' }; // Example position for player life
-        } else if (isOpponentPlayer) {
-          positionStyle = { top: '10px', right: '10px' }; // Example position for opponent life
-        } else if (isMyCreature || isOpponentCreature) {
-          // For creatures, you'd need to find their actual position on the field
-          // This is a placeholder, actual positioning would be more complex
-          const targetCard = (isMyCreature ? yourPlayedCards : opponentPlayedCards).find(card => card.id === effect.targetId);
-          if (targetCard) {
-            // This would ideally be based on the card's rendered position
-            // For now, just a generic position or you'd pass down refs/coordinates
-            positionStyle = { position: 'absolute', transform: 'translate(-50%, -50%)', zIndex: 100 };
-          }
-        }
-
-        return (
-          <div
-            key={index}
-            style={{
-              position: 'absolute',
-              backgroundColor: effect.type === 'creature_destroyed' ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)',
-              color: 'white',
-              padding: '5px 10px',
-              borderRadius: '5px',
-              fontSize: '1.5em',
-              fontWeight: 'bold',
-              animation: 'fade-out 1.5s forwards',
-              ...positionStyle,
-            }}
-          >
-            {effect.type === 'creature_destroyed' ? 'DESTROYED!' : `-${effect.amount}`}
-          </div>
-        );
-      })}
-
-      {/* Damage Indicators */}
-      {damageEffects.map((effect, index) => {
-        const isPlayer = effect.targetId === socket.id;
-        // Since we don't have playerOrder in state, we'll assume any non-creature, non-player target is the opponent
-        const isOpponentPlayer = !isPlayer && !yourPlayedCards.some(card => card.id === effect.targetId);
-        const isMyCreature = yourPlayedCards.some(card => card.id === effect.targetId);
-        const isOpponentCreature = opponentPlayedCards.some(card => card.id === effect.targetId);
-
-        let positionStyle = {};
-        if (isPlayer) {
-          positionStyle = { bottom: '10px', left: '10px' }; // Example position for player life
-        } else if (isOpponentPlayer) {
-          positionStyle = { top: '10px', right: '10px' }; // Example position for opponent life
-        } else if (isMyCreature || isOpponentCreature) {
-          // For creatures, you'd need to find their actual position on the field
-          // This is a placeholder, actual positioning would be more complex
-          const targetCard = (isMyCreature ? yourPlayedCards : opponentPlayedCards).find(card => card.id === effect.targetId);
-          if (targetCard) {
-            // This would ideally be based on the card's rendered position
-            // For now, just a generic position or you'd pass down refs/coordinates
-            positionStyle = { position: 'absolute', transform: 'translate(-50%, -50%)', zIndex: 100 };
-          }
-        }
-
-        return (
-          <div
-            key={index}
-            style={{
-              position: 'absolute',
-              backgroundColor: effect.type === 'creature_destroyed' ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)',
-              color: 'white',
-              padding: '5px 10px',
-              borderRadius: '5px',
-              fontSize: '1.5em',
-              fontWeight: 'bold',
-              animation: 'fade-out 1.5s forwards',
-              ...positionStyle,
-            }}
-          >
-            {effect.type === 'creature_destroyed' ? 'DESTROYED!' : `-${effect.amount}`}
-          </div>
-        );
-      })}
-      
-      <style jsx="true">{`
-        @keyframes fade-out {
-          from { opacity: 1; transform: translateY(0); }
-          to { opacity: 0; transform: translateY(-20px); }
-        }
-      `}</style>
     </DndProvider>
   );
 };
