@@ -42,21 +42,44 @@ const socket = io(serverUrl, {
   // path: '/socket.io/'
 });
 
-// Add connection status logging
+// Add connection status logging with user feedback
+const [connectionStatus, setConnectionStatus] = useState('disconnected');
+
 socket.on('connect', () => {
   console.log('Socket connected with ID:', socket.id);
+  setConnectionStatus('connected');
+  setMessage('Connected to server!');
 });
 
 socket.on('connect_error', (error) => {
   console.error('Socket connection error:', error.message);
+  setConnectionStatus('error');
+  setMessage('Failed to connect to server. Please check your internet connection and try again.');
+  
+  // If we're not in development mode and the connection fails, suggest checking the server
+  if (!isLocalDevelopment) {
+    setMessage(prev => `${prev} The game server might be down.`);
+  }
 });
 
 socket.on('disconnect', (reason) => {
   console.log('Socket disconnected. Reason:', reason);
+  setConnectionStatus('disconnected');
+  
   if (reason === 'io server disconnect') {
     console.log('Server intentionally disconnected the socket');
+    setMessage('Disconnected from server. Please refresh the page to reconnect.');
+  } else {
+    setMessage('Connection lost. Attempting to reconnect...');
   }
 });
+
+// Add a function to manually attempt reconnection
+const attemptReconnect = () => {
+  setMessage('Connecting to server...');
+  setConnectionStatus('connecting');
+  socket.connect();
+};
 
 // Add detailed logging for all events
 const events = [
@@ -448,14 +471,29 @@ const App = () => {
     );
   }
 
+  // Connection status indicator component
+  const ConnectionStatus = () => (
+    <div className={`${styles.connectionStatus} ${styles[connectionStatus]}`}>
+      {connectionStatus === 'connected' && 'オンライン接続中'}
+      {connectionStatus === 'connecting' && '接続中...'}
+      {connectionStatus === 'error' && (
+        <>
+          サーバーに接続できません
+          <button 
+            onClick={attemptReconnect}
+            className={styles.reconnectButton}
+          >
+            再接続
+          </button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={styles.appContainer}>
-        {gameMode === 'online' && (
-          <div className={styles.connectionStatus}>
-            {socket.connected ? 'オンライン接続中' : '接続中...'}
-          </div>
-        )}
+        {gameMode && <ConnectionStatus />}
         <h1 className={styles.messageHeader}>{message}</h1>
         <h2 className={styles.turnHeader}>{isYourTurn ? 'Your Turn' : 'Opponent\'s Turn'}</h2>
         <h3 className={styles.phaseHeader}>Phase: {currentPhase.replace(/_/g, ' ').toUpperCase()}</h3>

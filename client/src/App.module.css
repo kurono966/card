@@ -40,13 +40,51 @@
   position: fixed;
   top: 10px;
   right: 20px;
-  padding: 5px 10px;
-  background-color: #50fa7b;
-  color: #282a36;
-  border-radius: 4px;
+  padding: 8px 15px;
+  border-radius: 20px;
   font-size: 0.9rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.connectionStatus.connected {
+  background-color: #50fa7b;
+  color: #1e1e2e;
+}
+
+.connectionStatus.connecting {
+  background-color: #f1fa8c;
+  color: #1e1e2e;
+}
+
+.connectionStatus.error {
+  background-color: #ff5555;
+  color: white;
+}
+
+.reconnectButton {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid white;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.reconnectButton:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.reconnectButton:active {
+  transform: translateY(0);
 }
 
 .connectionStatus:before {
