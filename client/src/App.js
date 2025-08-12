@@ -591,9 +591,10 @@ const App = () => {
       )}
 
       {/* Damage Indicators */}
-      {gameState && damageEffects.map((effect, index) => {
+      {damageEffects.map((effect, index) => {
         const isPlayer = effect.targetId === socket.id;
-        const isOpponentPlayer = gameState && effect.targetId === gameState.playerOrder.find(id => id !== socket.id);
+        // Simplified check for opponent - if it's not the player and not a creature, assume it's the opponent
+        const isOpponentPlayer = !isPlayer && !yourPlayedCards.some(card => card.id === effect.targetId);
         const isMyCreature = yourPlayedCards.some(card => card.id === effect.targetId);
         const isOpponentCreature = opponentPlayedCards.some(card => card.id === effect.targetId);
 
