@@ -636,7 +636,8 @@ const App = () => {
       {/* Damage Indicators */}
       {damageEffects.map((effect, index) => {
         const isPlayer = effect.targetId === socket.id;
-        const isOpponentPlayer = effect.targetId === gameState.playerOrder.find(id => id !== socket.id);
+        // Since we don't have playerOrder in state, we'll assume any non-creature, non-player target is the opponent
+        const isOpponentPlayer = !isPlayer && !yourPlayedCards.some(card => card.id === effect.targetId);
         const isMyCreature = yourPlayedCards.some(card => card.id === effect.targetId);
         const isOpponentCreature = opponentPlayedCards.some(card => card.id === effect.targetId);
 
