@@ -633,14 +633,6 @@ const App = () => {
         );
       })}
 
-      <style jsx="true">{`
-        @keyframes fade-out {
-          from { opacity: 1; transform: translateY(0); }
-          to { opacity: 0; transform: translateY(-20px); }
-        }
-      `}</style>
-    </DndProvider>
-
       {/* Damage Indicators */}
       {damageEffects.map((effect, index) => {
         const isPlayer = effect.targetId === socket.id;
@@ -683,7 +675,7 @@ const App = () => {
           </div>
         );
       })}
-
+      
       <style jsx="true">{`
         @keyframes fade-out {
           from { opacity: 1; transform: translateY(0); }
