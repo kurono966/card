@@ -20,21 +20,41 @@ const serverUrl = isLocalDevelopment
 console.log(`Connecting to ${isLocalDevelopment ? 'local' : 'remote'} server:`, serverUrl);
 
 // Initialize socket with autoConnect set to false
+console.log('Initializing socket connection to:', serverUrl);
 const socket = io(serverUrl, {
   reconnection: true,
-  reconnectionAttempts: 10,
+  reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  reconnectionDelayMax: 10000,
-  timeout: 20000,
+  reconnectionDelayMax: 5000,
+  timeout: 10000,
   withCredentials: true,
-  // Try both transports
-  transports: ['polling', 'websocket'],
+  // Force WebSocket only for better reliability
+  transports: ['websocket'],
   // Don't connect automatically - we'll connect manually after setting up handlers
   autoConnect: false,
   // Add query parameters for debugging
   query: {
     clientType: 'web',
-    version: '1.0.0'
+    version: '1.0.0',
+    timestamp: Date.now()
+  },
+  // Add path if your server is using a specific path for socket.io
+  // path: '/socket.io/'
+});
+
+// Add connection status logging
+socket.on('connect', () => {
+  console.log('Socket connected with ID:', socket.id);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Socket connection error:', error.message);
+});
+
+socket.on('disconnect', (reason) => {
+  console.log('Socket disconnected. Reason:', reason);
+  if (reason === 'io server disconnect') {
+    console.log('Server intentionally disconnected the socket');
   }
 });
 
